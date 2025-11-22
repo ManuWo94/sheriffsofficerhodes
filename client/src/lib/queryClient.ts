@@ -12,12 +12,24 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const sessionToken = localStorage.getItem("sheriff_session");
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data && { "Content-Type": "application/json" }),
+      ...(sessionToken && { "x-session-token": sessionToken }),
+    },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  if (res.status === 401) {
+    // Session expired, logout
+    localStorage.removeItem("sheriff_user");
+    localStorage.removeItem("sheriff_session");
+    window.location.reload();
+  }
 
   await throwIfResNotOk(res);
   return res;
@@ -29,12 +41,23 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const sessionToken = localStorage.getItem("sheriff_session");
+    
     const res = await fetch(queryKey.join("/") as string, {
+      headers: {
+        ...(sessionToken && { "x-session-token": sessionToken }),
+      },
       credentials: "include",
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    if (res.status === 401) {
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      // Session expired, logout
+      localStorage.removeItem("sheriff_user");
+      localStorage.removeItem("sheriff_session");
+      window.location.reload();
     }
 
     await throwIfResNotOk(res);
