@@ -24,11 +24,14 @@ export default function Notes() {
     queryKey: ["/api/notes/global"],
   });
 
-  const { data: userNotes, isLoading: userLoading } = useQuery<UserNote[]>({
+  const { data: userNotes, isLoading: userLoading, refetch: refetchUserNotes } = useQuery<UserNote[]>({
     queryKey: ["/api/notes/user", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const response = await fetch(`/api/notes/user?userId=${user!.id}`);
+      const sessionToken = localStorage.getItem("sheriff_session");
+      const response = await fetch(`/api/notes/user?userId=${user!.id}`, {
+        headers: sessionToken ? { "x-session-token": sessionToken } : {},
+      });
       if (!response.ok) throw new Error("Failed to fetch user notes");
       return response.json();
     },
