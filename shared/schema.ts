@@ -169,11 +169,15 @@ export const globalNotes = pgTable("global_notes", {
   content: text("content").notNull(),
   author: text("author").notNull(), // username
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: text("updated_by").notNull(),
 });
 
 export const insertGlobalNoteSchema = createInsertSchema(globalNotes).omit({ 
   id: true, 
-  createdAt: true 
+  createdAt: true,
+  updatedAt: true,
+  updatedBy: true,
 });
 export type InsertGlobalNote = z.infer<typeof insertGlobalNoteSchema>;
 export type GlobalNote = typeof globalNotes.$inferSelect;
@@ -184,11 +188,13 @@ export const userNotes = pgTable("user_notes", {
   userId: text("user_id").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertUserNoteSchema = createInsertSchema(userNotes).omit({ 
   id: true, 
-  createdAt: true 
+  createdAt: true,
+  updatedAt: true,
 });
 export type InsertUserNote = z.infer<typeof insertUserNoteSchema>;
 export type UserNote = typeof userNotes.$inferSelect;

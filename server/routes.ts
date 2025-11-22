@@ -517,6 +517,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/notes/global/:id", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { content } = req.body;
+      
+      await storage.updateGlobalNote(id, content, req.session.username);
+      await logAudit("Notiz bearbeitet", "note", id, `Gemeinsame Notiz wurde bearbeitet`, req.session.username);
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
   app.get("/api/notes/user", requireAuth, async (req: any, res) => {
     try {
       const userId = req.query.userId as string;
@@ -535,6 +549,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const note = await storage.createUserNote(req.body);
       res.json(note);
+    } catch (error) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
+  app.patch("/api/notes/user/:id", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { content } = req.body;
+      
+      await storage.updateUserNote(id, content);
+      res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Server-Fehler" });
     }

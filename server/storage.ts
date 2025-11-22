@@ -64,8 +64,10 @@ export interface IStorage {
   // Notes
   getAllGlobalNotes(): Promise<GlobalNote[]>;
   createGlobalNote(note: InsertGlobalNote): Promise<GlobalNote>;
+  updateGlobalNote(id: string, content: string, updatedBy: string): Promise<void>;
   getUserNotes(userId: string): Promise<UserNote[]>;
   createUserNote(note: InsertUserNote): Promise<UserNote>;
+  updateUserNote(id: string, content: string): Promise<void>;
 
   // Audit Logs
   getAllAuditLogs(): Promise<AuditLog[]>;
@@ -373,13 +375,26 @@ export class MemStorage implements IStorage {
 
   async createGlobalNote(insertNote: InsertGlobalNote): Promise<GlobalNote> {
     const id = randomUUID();
+    const now = new Date();
     const note: GlobalNote = {
       ...insertNote,
       id,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
+      updatedBy: insertNote.author,
     };
     this.globalNotes.set(id, note);
     return note;
+  }
+
+  async updateGlobalNote(id: string, content: string, updatedBy: string): Promise<void> {
+    const note = this.globalNotes.get(id);
+    if (note) {
+      note.content = content;
+      note.updatedAt = new Date();
+      note.updatedBy = updatedBy;
+      this.globalNotes.set(id, note);
+    }
   }
 
   async getUserNotes(userId: string): Promise<UserNote[]> {
@@ -390,13 +405,24 @@ export class MemStorage implements IStorage {
 
   async createUserNote(insertNote: InsertUserNote): Promise<UserNote> {
     const id = randomUUID();
+    const now = new Date();
     const note: UserNote = {
       ...insertNote,
       id,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
     };
     this.userNotes.set(id, note);
     return note;
+  }
+
+  async updateUserNote(id: string, content: string): Promise<void> {
+    const note = this.userNotes.get(id);
+    if (note) {
+      note.content = content;
+      note.updatedAt = new Date();
+      this.userNotes.set(id, note);
+    }
   }
 
   // Audit Logs

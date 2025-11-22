@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StickyNote, User, Users } from "lucide-react";
+import { StickyNote, User, Users, Edit2, Check, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,10 @@ export default function Notes() {
   const [userNoteContent, setUserNoteContent] = useState("");
   const [isSubmittingGlobal, setIsSubmittingGlobal] = useState(false);
   const [isSubmittingUser, setIsSubmittingUser] = useState(false);
+  const [editingGlobalId, setEditingGlobalId] = useState<string | null>(null);
+  const [editingGlobalContent, setEditingGlobalContent] = useState("");
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingUserContent, setEditingUserContent] = useState("");
 
   const { data: globalNotes, isLoading: globalLoading } = useQuery<GlobalNote[]>({
     queryKey: ["/api/notes/global"],
@@ -92,6 +96,32 @@ export default function Notes() {
       });
     } finally {
       setIsSubmittingUser(false);
+    }
+  };
+
+  const handleUpdateGlobalNote = async (id: string) => {
+    if (!editingGlobalContent.trim()) return;
+
+    try {
+      await apiRequest("PATCH", `/api/notes/global/${id}`, { content: editingGlobalContent });
+      toast({ title: "Erfolg", description: "Notiz wurde aktualisiert" });
+      setEditingGlobalId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/notes/global"] });
+    } catch (error) {
+      toast({ title: "Fehler", description: "Notiz konnte nicht aktualisiert werden", variant: "destructive" });
+    }
+  };
+
+  const handleUpdateUserNote = async (id: string) => {
+    if (!editingUserContent.trim()) return;
+
+    try {
+      await apiRequest("PATCH", `/api/notes/user/${id}`, { content: editingUserContent });
+      toast({ title: "Erfolg", description: "Notiz wurde aktualisiert" });
+      setEditingUserId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/notes/user", user!.id] });
+    } catch (error) {
+      toast({ title: "Fehler", description: "Notiz konnte nicht aktualisiert werden", variant: "destructive" });
     }
   };
 
