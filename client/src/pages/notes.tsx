@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StickyNote, User, Users, Edit2, Check, X } from "lucide-react";
+import { StickyNote, User, Users, Edit2, Check, X, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +28,7 @@ export default function Notes() {
     queryKey: ["/api/notes/global"],
   });
 
-  const { data: userNotes, isLoading: userLoading, refetch: refetchUserNotes } = useQuery<UserNote[]>({
+  const { data: userNotes, isLoading: userLoading } = useQuery<UserNote[]>({
     queryKey: ["/api/notes/user", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
@@ -43,28 +43,17 @@ export default function Notes() {
 
   const handleGlobalNoteSubmit = async () => {
     if (!globalNoteContent.trim()) return;
-    
     setIsSubmittingGlobal(true);
-
     try {
       await apiRequest("POST", "/api/notes/global", {
         content: globalNoteContent,
         author: user!.username,
       });
-
-      toast({
-        title: "Erfolg",
-        description: "Notiz wurde hinzugefügt",
-      });
-
+      toast({ title: "Erfolg", description: "Notiz hinzugefügt" });
       setGlobalNoteContent("");
       queryClient.invalidateQueries({ queryKey: ["/api/notes/global"] });
     } catch (error) {
-      toast({
-        title: "Fehler",
-        description: "Notiz konnte nicht gespeichert werden",
-        variant: "destructive",
-      });
+      toast({ title: "Fehler", description: "Notiz konnte nicht gespeichert werden", variant: "destructive" });
     } finally {
       setIsSubmittingGlobal(false);
     }
@@ -72,28 +61,17 @@ export default function Notes() {
 
   const handleUserNoteSubmit = async () => {
     if (!userNoteContent.trim()) return;
-    
     setIsSubmittingUser(true);
-
     try {
       await apiRequest("POST", "/api/notes/user", {
         userId: user!.id,
         content: userNoteContent,
       });
-
-      toast({
-        title: "Erfolg",
-        description: "Private Notiz wurde hinzugefügt",
-      });
-
+      toast({ title: "Erfolg", description: "Notiz hinzugefügt" });
       setUserNoteContent("");
       queryClient.invalidateQueries({ queryKey: ["/api/notes/user", user!.id] });
     } catch (error) {
-      toast({
-        title: "Fehler",
-        description: "Notiz konnte nicht gespeichert werden",
-        variant: "destructive",
-      });
+      toast({ title: "Fehler", description: "Notiz konnte nicht gespeichert werden", variant: "destructive" });
     } finally {
       setIsSubmittingUser(false);
     }
@@ -101,27 +79,45 @@ export default function Notes() {
 
   const handleUpdateGlobalNote = async (id: string) => {
     if (!editingGlobalContent.trim()) return;
-
     try {
       await apiRequest("PATCH", `/api/notes/global/${id}`, { content: editingGlobalContent });
-      toast({ title: "Erfolg", description: "Notiz wurde aktualisiert" });
+      toast({ title: "Erfolg", description: "Notiz aktualisiert" });
       setEditingGlobalId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/notes/global"] });
     } catch (error) {
-      toast({ title: "Fehler", description: "Notiz konnte nicht aktualisiert werden", variant: "destructive" });
+      toast({ title: "Fehler", description: "Fehler beim Aktualisieren", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteGlobalNote = async (id: string) => {
+    try {
+      await apiRequest("DELETE", `/api/notes/global/${id}`, {});
+      toast({ title: "Erfolg", description: "Notiz gelöscht" });
+      queryClient.invalidateQueries({ queryKey: ["/api/notes/global"] });
+    } catch (error) {
+      toast({ title: "Fehler", description: "Fehler beim Löschen", variant: "destructive" });
     }
   };
 
   const handleUpdateUserNote = async (id: string) => {
     if (!editingUserContent.trim()) return;
-
     try {
       await apiRequest("PATCH", `/api/notes/user/${id}`, { content: editingUserContent });
-      toast({ title: "Erfolg", description: "Notiz wurde aktualisiert" });
+      toast({ title: "Erfolg", description: "Notiz aktualisiert" });
       setEditingUserId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/notes/user", user!.id] });
     } catch (error) {
-      toast({ title: "Fehler", description: "Notiz konnte nicht aktualisiert werden", variant: "destructive" });
+      toast({ title: "Fehler", description: "Fehler beim Aktualisieren", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteUserNote = async (id: string) => {
+    try {
+      await apiRequest("DELETE", `/api/notes/user/${id}`, {});
+      toast({ title: "Erfolg", description: "Notiz gelöscht" });
+      queryClient.invalidateQueries({ queryKey: ["/api/notes/user", user!.id] });
+    } catch (error) {
+      toast({ title: "Fehler", description: "Fehler beim Löschen", variant: "destructive" });
     }
   };
 
@@ -144,6 +140,7 @@ export default function Notes() {
           </TabsTrigger>
         </TabsList>
 
+        {/* GEMEINSAME NOTIZEN */}
         <TabsContent value="global" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
@@ -153,49 +150,82 @@ export default function Notes() {
               <Textarea
                 value={globalNoteContent}
                 onChange={(e) => setGlobalNoteContent(e.target.value)}
-                placeholder="Gemeinsame Notiz eingeben..."
-                className="min-h-32"
+                placeholder="Kommentar oder Anmerkung hinzufügen..."
+                className="min-h-24"
                 data-testid="input-global-note"
               />
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleGlobalNoteSubmit} 
-                  disabled={!globalNoteContent.trim() || isSubmittingGlobal}
-                  data-testid="button-submit-global-note"
-                >
-                  <StickyNote className="w-4 h-4 mr-2" />
-                  {isSubmittingGlobal ? "Speichern..." : "Notiz hinzufügen"}
-                </Button>
-              </div>
+              <Button 
+                onClick={handleGlobalNoteSubmit} 
+                disabled={!globalNoteContent.trim() || isSubmittingGlobal}
+                data-testid="button-submit-global-note"
+              >
+                <StickyNote className="w-4 h-4 mr-2" />
+                {isSubmittingGlobal ? "Speichern..." : "Hinzufügen"}
+              </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-serif">Alle gemeinsamen Notizen</CardTitle>
+              <CardTitle className="font-serif">Alle Einträge</CardTitle>
             </CardHeader>
             <CardContent>
               {globalLoading ? (
                 <div className="text-center py-12 text-muted-foreground">Laden...</div>
               ) : !globalNotes || globalNotes.length === 0 ? (
                 <div className="text-center py-12">
-                  <StickyNote className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">Noch keine gemeinsamen Notizen vorhanden</p>
+                  <p className="text-muted-foreground">Keine Einträge vorhanden</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {globalNotes.map((note) => (
                     <div 
-                      key={note.id} 
-                      className="p-4 border border-border rounded-md space-y-2"
+                      key={note.id}
+                      className="p-3 border border-border rounded-md space-y-2"
                       data-testid={`global-note-${note.id}`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border">
-                        <span className="font-medium">{note.author}</span>
-                        <span>•</span>
-                        <span>{format(new Date(note.createdAt), "dd.MM.yyyy HH:mm", { locale: de })}</span>
-                      </div>
+                      {editingGlobalId === note.id ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={editingGlobalContent}
+                            onChange={(e) => setEditingGlobalContent(e.target.value)}
+                            className="min-h-20"
+                            data-testid={`edit-global-${note.id}`}
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleUpdateGlobalNote(note.id)}>
+                              <Check className="w-4 h-4 mr-1" /> Speichern
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingGlobalId(null)}>
+                              <X className="w-4 h-4 mr-1" /> Abbrechen
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
+                            <div>
+                              <span className="font-medium">{note.author}</span>
+                              <span> • {format(new Date(note.createdAt), "dd.MM.yyyy HH:mm", { locale: de })}</span>
+                              {note.updatedBy && note.updatedBy !== note.author && (
+                                <span className="ml-2">bearbeitet von {note.updatedBy}</span>
+                              )}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => {
+                                setEditingGlobalId(note.id);
+                                setEditingGlobalContent(note.content);
+                              }} data-testid={`button-edit-global-${note.id}`}>
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleDeleteGlobalNote(note.id)} data-testid={`button-delete-global-${note.id}`}>
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -204,6 +234,7 @@ export default function Notes() {
           </Card>
         </TabsContent>
 
+        {/* PRIVATE NOTIZEN */}
         <TabsContent value="private" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
@@ -213,47 +244,76 @@ export default function Notes() {
               <Textarea
                 value={userNoteContent}
                 onChange={(e) => setUserNoteContent(e.target.value)}
-                placeholder="Private Notiz eingeben..."
-                className="min-h-32"
+                placeholder="Persönliche Notiz eingeben..."
+                className="min-h-24"
                 data-testid="input-user-note"
               />
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleUserNoteSubmit} 
-                  disabled={!userNoteContent.trim() || isSubmittingUser}
-                  data-testid="button-submit-user-note"
-                >
-                  <StickyNote className="w-4 h-4 mr-2" />
-                  {isSubmittingUser ? "Speichern..." : "Notiz hinzufügen"}
-                </Button>
-              </div>
+              <Button 
+                onClick={handleUserNoteSubmit} 
+                disabled={!userNoteContent.trim() || isSubmittingUser}
+                data-testid="button-submit-user-note"
+              >
+                <StickyNote className="w-4 h-4 mr-2" />
+                {isSubmittingUser ? "Speichern..." : "Hinzufügen"}
+              </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-serif">Meine privaten Notizen</CardTitle>
+              <CardTitle className="font-serif">Meine Notizen</CardTitle>
             </CardHeader>
             <CardContent>
               {userLoading ? (
                 <div className="text-center py-12 text-muted-foreground">Laden...</div>
               ) : !userNotes || userNotes.length === 0 ? (
                 <div className="text-center py-12">
-                  <StickyNote className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-muted-foreground">Noch keine privaten Notizen vorhanden</p>
+                  <p className="text-muted-foreground">Keine Notizen vorhanden</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {userNotes.map((note) => (
                     <div 
-                      key={note.id} 
-                      className="p-4 border border-border rounded-md space-y-2"
+                      key={note.id}
+                      className="p-3 border border-border rounded-md space-y-2"
                       data-testid={`user-note-${note.id}`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                      <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-                        {format(new Date(note.createdAt), "dd.MM.yyyy HH:mm", { locale: de })}
-                      </div>
+                      {editingUserId === note.id ? (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={editingUserContent}
+                            onChange={(e) => setEditingUserContent(e.target.value)}
+                            className="min-h-20"
+                            data-testid={`edit-user-${note.id}`}
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleUpdateUserNote(note.id)}>
+                              <Check className="w-4 h-4 mr-1" /> Speichern
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingUserId(null)}>
+                              <X className="w-4 h-4 mr-1" /> Abbrechen
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border">
+                            <span>{format(new Date(note.updatedAt), "dd.MM.yyyy HH:mm", { locale: de })}</span>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="ghost" onClick={() => {
+                                setEditingUserId(note.id);
+                                setEditingUserContent(note.content);
+                              }} data-testid={`button-edit-user-${note.id}`}>
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => handleDeleteUserNote(note.id)} data-testid={`button-delete-user-${note.id}`}>
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

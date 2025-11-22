@@ -531,6 +531,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/notes/global/:id", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteGlobalNote(id);
+      await logAudit("Notiz gelöscht", "note", id, `Gemeinsame Notiz wurde gelöscht`, req.session.username);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
   app.get("/api/notes/user", requireAuth, async (req: any, res) => {
     try {
       const userId = req.query.userId as string;
@@ -560,6 +571,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { content } = req.body;
       
       await storage.updateUserNote(id, content);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
+  app.delete("/api/notes/user/:id", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteUserNote(id);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Server-Fehler" });

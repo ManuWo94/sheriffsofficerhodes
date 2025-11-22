@@ -65,9 +65,11 @@ export interface IStorage {
   getAllGlobalNotes(): Promise<GlobalNote[]>;
   createGlobalNote(note: InsertGlobalNote): Promise<GlobalNote>;
   updateGlobalNote(id: string, content: string, updatedBy: string): Promise<void>;
+  deleteGlobalNote(id: string): Promise<void>;
   getUserNotes(userId: string): Promise<UserNote[]>;
   createUserNote(note: InsertUserNote): Promise<UserNote>;
   updateUserNote(id: string, content: string): Promise<void>;
+  deleteUserNote(id: string): Promise<void>;
 
   // Audit Logs
   getAllAuditLogs(): Promise<AuditLog[]>;
@@ -423,6 +425,14 @@ export class MemStorage implements IStorage {
       note.updatedAt = new Date();
       this.userNotes.set(id, note);
     }
+  }
+
+  async deleteGlobalNote(id: string): Promise<void> {
+    this.globalNotes.delete(id);
+  }
+
+  async deleteUserNote(id: string): Promise<void> {
+    this.userNotes.delete(id);
   }
 
   // Audit Logs
