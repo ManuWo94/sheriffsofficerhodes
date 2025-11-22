@@ -183,9 +183,9 @@ export default function Weapons() {
                   </SelectContent>
                 </Select>
               </TableCell>
-              <TableCell className="text-sm">{weapon.createdBy}</TableCell>
+              <TableCell className="text-sm">{weapon.createdBy || "-"}</TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {weapon.updatedBy} ({format(new Date(weapon.updatedAt), "dd.MM.yyyy HH:mm", { locale: de })})
+                {weapon.updatedBy || "-"} ({format(new Date(weapon.updatedAt || weapon.createdAt), "dd.MM.yyyy HH:mm", { locale: de })})
               </TableCell>
               <TableCell className="text-right">
                 {canDelete() && (

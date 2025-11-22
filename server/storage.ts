@@ -50,8 +50,8 @@ export interface IStorage {
   // Weapons
   getAllWeapons(): Promise<Weapon[]>;
   getWeaponById(id: string): Promise<Weapon | undefined>;
-  createWeapon(weapon: InsertWeapon): Promise<Weapon>;
-  updateWeaponStatus(id: string, status: string): Promise<void>;
+  createWeapon(weapon: InsertWeapon, createdBy: string): Promise<Weapon>;
+  updateWeaponStatus(id: string, status: string, updatedBy: string): Promise<void>;
   deleteWeapon(id: string): Promise<void>;
 
   // Tasks
@@ -291,7 +291,7 @@ export class MemStorage implements IStorage {
     return this.weapons.get(id);
   }
 
-  async createWeapon(insertWeapon: InsertWeapon): Promise<Weapon> {
+  async createWeapon(insertWeapon: InsertWeapon, createdBy: string): Promise<Weapon> {
     const id = randomUUID();
     const now = new Date();
     const weapon: Weapon = {
@@ -299,16 +299,21 @@ export class MemStorage implements IStorage {
       id,
       statusChangedAt: now,
       createdAt: now,
+      createdBy,
+      updatedAt: now,
+      updatedBy: createdBy,
     };
     this.weapons.set(id, weapon);
     return weapon;
   }
 
-  async updateWeaponStatus(id: string, status: string): Promise<void> {
+  async updateWeaponStatus(id: string, status: string, updatedBy: string): Promise<void> {
     const weapon = this.weapons.get(id);
     if (weapon) {
       weapon.status = status as any;
       weapon.statusChangedAt = new Date();
+      weapon.updatedAt = new Date();
+      weapon.updatedBy = updatedBy;
       this.weapons.set(id, weapon);
     }
   }

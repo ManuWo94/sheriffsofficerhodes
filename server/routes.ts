@@ -373,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/weapons", requireAuth, async (req: any, res) => {
     try {
-      const weapon = await storage.createWeapon(req.body);
+      const weapon = await storage.createWeapon(req.body, req.session.username);
       
       await logAudit("Waffe registriert", "weapon", weapon.id, `Waffe ${weapon.serialNumber} (${weapon.weaponType}) für ${weapon.owner} wurde registriert`, req.session.username);
       
@@ -393,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Waffe nicht gefunden" });
       }
       
-      await storage.updateWeaponStatus(id, status);
+      await storage.updateWeaponStatus(id, status, req.session.username);
       
       await logAudit("Waffenstatus geändert", "weapon", id, `Waffe ${weapon.serialNumber} Status: ${weapon.status} → ${status}`, req.session.username);
       
