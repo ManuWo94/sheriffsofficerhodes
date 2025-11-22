@@ -26,9 +26,12 @@ export const TASK_ASSIGN_PERMISSIONS: Rank[] = ["Sheriff", "Deputy Sheriff", "De
 export const CASE_STATUS = ["offen", "in Bearbeitung", "abgeschlossen"] as const;
 export type CaseStatus = typeof CASE_STATUS[number];
 
-// Weapon status options
-export const WEAPON_STATUS = ["vergeben", "im Waffenschrank", "verloren gegangen"] as const;
-export type WeaponStatus = typeof WEAPON_STATUS[number];
+// Weapon status options (separate for each category)
+export const CITIZEN_WEAPON_STATUS = ["beschlagnahmt", "zurückgegeben", "verloren gegangen", "vernichtet"] as const;
+export const SERVICE_WEAPON_STATUS = ["im Waffenschrank", "vergeben", "verloren gegangen"] as const;
+export type CitizenWeaponStatus = typeof CITIZEN_WEAPON_STATUS[number];
+export type ServiceWeaponStatus = typeof SERVICE_WEAPON_STATUS[number];
+export type WeaponStatus = CitizenWeaponStatus | ServiceWeaponStatus;
 
 // Task status options
 export const TASK_STATUS = ["offen", "in Bearbeitung", "erledigt"] as const;

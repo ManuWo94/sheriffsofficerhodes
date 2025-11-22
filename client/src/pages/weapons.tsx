@@ -34,7 +34,7 @@ import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Weapon, WeaponStatus } from "@shared/schema";
-import { WEAPON_STATUS } from "@shared/schema";
+import { CITIZEN_WEAPON_STATUS, SERVICE_WEAPON_STATUS } from "@shared/schema";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -53,8 +53,12 @@ export default function Weapons() {
     weaponType: "",
     owner: "",
     category: "Bürgerwaffe" as "Bürgerwaffe" | "Dienstwaffe",
-    status: "im Waffenschrank" as WeaponStatus,
+    status: "beschlagnahmt" as WeaponStatus,
   });
+
+  const getStatusOptions = () => {
+    return formData.category === "Dienstwaffe" ? SERVICE_WEAPON_STATUS : CITIZEN_WEAPON_STATUS;
+  };
 
   const { data: weapons, isLoading } = useQuery<Weapon[]>({
     queryKey: ["/api/weapons"],
@@ -81,7 +85,7 @@ export default function Weapons() {
         weaponType: "",
         owner: "",
         category: activeCategory,
-        status: "im Waffenschrank",
+        status: activeCategory === "Dienstwaffe" ? "im Waffenschrank" : "beschlagnahmt",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/weapons"] });
     } catch (error) {
@@ -138,12 +142,15 @@ export default function Weapons() {
   };
 
   const getStatusBadgeVariant = (status: WeaponStatus) => {
-    switch (status) {
-      case "im Waffenschrank": return "secondary";
-      case "vergeben": return "default";
-      case "verloren gegangen": return "destructive";
-      default: return "outline";
-    }
+    // Dienstwaffen
+    if (status === "im Waffenschrank") return "secondary";
+    if (status === "vergeben") return "default";
+    // Bürgerwaffen
+    if (status === "beschlagnahmt") return "destructive";
+    if (status === "zurückgegeben") return "default";
+    if (status === "vernichtet") return "outline";
+    if (status === "verloren gegangen") return "destructive";
+    return "outline";
   };
 
   const WeaponsTable = ({ weapons: weaponList }: { weapons: Weapon[] }) => (
@@ -175,7 +182,7 @@ export default function Weapons() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {WEAPON_STATUS.map((status) => (
+                    {getStatusOptions().map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
                       </SelectItem>
@@ -318,7 +325,11 @@ export default function Weapons() {
               <Label htmlFor="category">Kategorie</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value as typeof formData.category })}
+                onValueChange={(value) => {
+                  const newCategory = value as "Bürgerwaffe" | "Dienstwaffe";
+                  const newStatus = newCategory === "Dienstwaffe" ? "im Waffenschrank" : "beschlagnahmt";
+                  setFormData({ ...formData, category: newCategory, status: newStatus as WeaponStatus });
+                }}
               >
                 <SelectTrigger data-testid="select-category">
                   <SelectValue />
@@ -340,7 +351,7 @@ export default function Weapons() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {WEAPON_STATUS.map((status) => (
+                  {getStatusOptions().map((status) => (
                     <SelectItem key={status} value={status}>
                       {status}
                     </SelectItem>
