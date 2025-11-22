@@ -500,6 +500,46 @@ export default function Cases() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fallakte bearbeiten - {selectedCase?.caseNumber}</DialogTitle>
+          </DialogHeader>
+          {selectedCase && (
+            <form onSubmit={handleEditCase} className="space-y-4">
+              <div>
+                <Label>Delikt</Label>
+                <Input value={editFormData.crime} onChange={(e) => setEditFormData({ ...editFormData, crime: e.target.value })} data-testid="input-edit-crime" />
+              </div>
+              <div>
+                <Label>Notizen</Label>
+                <Textarea value={editFormData.notes} onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })} data-testid="input-edit-notes" />
+              </div>
+              <div>
+                <Label>Merkmale</Label>
+                <Textarea value={editFormData.characteristics} onChange={(e) => setEditFormData({ ...editFormData, characteristics: e.target.value })} data-testid="input-edit-characteristics" />
+              </div>
+              <div>
+                <Label>Foto</Label>
+                <Input type="file" accept="image/*" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setEditFormData({ ...editFormData, photo: reader.result as string });
+                    reader.readAsDataURL(file);
+                  }
+                }} data-testid="input-edit-photo" />
+                {editFormData.photo && <div className="mt-2 text-sm text-muted-foreground">Foto ausgewählt</div>}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowEditDialog(false)}>Abbrechen</Button>
+                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Speichern..." : "Speichern"}</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
