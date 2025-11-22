@@ -53,7 +53,7 @@ export default function Weapons() {
     weaponType: "",
     owner: "",
     category: "Bürgerwaffe" as "Bürgerwaffe" | "Dienstwaffe",
-    status: "registriert" as WeaponStatus,
+    status: "im Waffenschrank" as WeaponStatus,
   });
 
   const { data: weapons, isLoading } = useQuery<Weapon[]>({
@@ -81,7 +81,7 @@ export default function Weapons() {
         weaponType: "",
         owner: "",
         category: activeCategory,
-        status: "registriert",
+        status: "im Waffenschrank",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/weapons"] });
     } catch (error) {
@@ -139,9 +139,9 @@ export default function Weapons() {
 
   const getStatusBadgeVariant = (status: WeaponStatus) => {
     switch (status) {
-      case "registriert": return "secondary";
-      case "beschlagnahmt": return "destructive";
-      case "zurückgegeben": return "default";
+      case "im Waffenschrank": return "secondary";
+      case "vergeben": return "default";
+      case "verloren gegangen": return "destructive";
       default: return "outline";
     }
   };
@@ -155,7 +155,8 @@ export default function Weapons() {
             <TableHead>Typ</TableHead>
             <TableHead>Besitzer</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Statusänderung</TableHead>
+            <TableHead>Erstellt von</TableHead>
+            <TableHead>Zuletzt bearbeitet</TableHead>
             <TableHead className="text-right">Aktionen</TableHead>
           </TableRow>
         </TableHeader>
@@ -182,8 +183,9 @@ export default function Weapons() {
                   </SelectContent>
                 </Select>
               </TableCell>
+              <TableCell className="text-sm">{weapon.createdBy}</TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                {format(new Date(weapon.statusChangedAt), "dd.MM.yyyy HH:mm", { locale: de })}
+                {weapon.updatedBy} ({format(new Date(weapon.updatedAt), "dd.MM.yyyy HH:mm", { locale: de })})
               </TableCell>
               <TableCell className="text-right">
                 {canDelete() && (

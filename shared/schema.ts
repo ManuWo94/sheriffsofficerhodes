@@ -27,7 +27,7 @@ export const CASE_STATUS = ["offen", "in Bearbeitung", "abgeschlossen"] as const
 export type CaseStatus = typeof CASE_STATUS[number];
 
 // Weapon status options
-export const WEAPON_STATUS = ["registriert", "beschlagnahmt", "zurückgegeben"] as const;
+export const WEAPON_STATUS = ["vergeben", "im Waffenschrank", "verloren gegangen"] as const;
 export type WeaponStatus = typeof WEAPON_STATUS[number];
 
 // Task status options
@@ -124,12 +124,18 @@ export const weapons = pgTable("weapons", {
   status: text("status").notNull().$type<WeaponStatus>(),
   statusChangedAt: timestamp("status_changed_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: text("created_by").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: text("updated_by").notNull(),
 });
 
 export const insertWeaponSchema = createInsertSchema(weapons).omit({ 
   id: true, 
   statusChangedAt: true, 
-  createdAt: true 
+  createdAt: true,
+  updatedAt: true,
+  createdBy: true,
+  updatedBy: true,
 });
 export type InsertWeapon = z.infer<typeof insertWeaponSchema>;
 export type Weapon = typeof weapons.$inferSelect;
