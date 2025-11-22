@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { DELETE_PERMISSIONS } from "@shared/schema";
+import { DELETE_PERMISSIONS, TASK_ASSIGN_PERMISSIONS } from "@shared/schema";
 
 // Helper to create audit log
 async function logAudit(
