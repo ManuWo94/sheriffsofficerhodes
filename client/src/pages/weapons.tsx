@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Dialog, 
@@ -42,23 +41,32 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 export default function Weapons() {
   const { canDelete } = useAuth();
   const { toast } = useToast();
-  const [showNewDialog, setShowNewDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedWeapon, setSelectedWeapon] = useState<Weapon | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<"Bürgerwaffe" | "Dienstwaffe">("Bürgerwaffe");
 
-  const [formData, setFormData] = useState({
+  // Citizen Weapons State
+  const [showCitizenDialog, setShowCitizenDialog] = useState(false);
+  const [citizenFormData, setCitizenFormData] = useState({
     serialNumber: "",
     weaponType: "",
     owner: "",
-    category: "Bürgerwaffe" as "Bürgerwaffe" | "Dienstwaffe",
+    category: "Bürgerwaffe" as const,
     status: "beschlagnahmt" as WeaponStatus,
   });
+  const [isSubmittingCitizen, setIsSubmittingCitizen] = useState(false);
 
-  const getStatusOptions = () => {
-    return formData.category === "Dienstwaffe" ? SERVICE_WEAPON_STATUS : CITIZEN_WEAPON_STATUS;
-  };
+  // Service Weapons State
+  const [showServiceDialog, setShowServiceDialog] = useState(false);
+  const [serviceFormData, setServiceFormData] = useState({
+    serialNumber: "",
+    weaponType: "",
+    owner: "",
+    category: "Dienstwaffe" as const,
+    status: "im Waffenschrank" as WeaponStatus,
+  });
+  const [isSubmittingService, setIsSubmittingService] = useState(false);
+
+  // Delete State
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedWeapon, setSelectedWeapon] = useState<Weapon | null>(null);
 
   const { data: weapons, isLoading } = useQuery<Weapon[]>({
     queryKey: ["/api/weapons"],
@@ -67,85 +75,80 @@ export default function Weapons() {
   const citizenWeapons = weapons?.filter(w => w.category === "Bürgerwaffe") || [];
   const serviceWeapons = weapons?.filter(w => w.category === "Dienstwaffe") || [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Citizen Weapons Submit
+  const handleCitizenSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setIsSubmittingCitizen(true);
 
     try {
-      await apiRequest("POST", "/api/weapons", formData);
-
-      toast({
-        title: "Erfolg",
-        description: "Waffe wurde registriert",
-      });
-
-      setShowNewDialog(false);
-      setFormData({
+      await apiRequest("POST", "/api/weapons", citizenFormData);
+      toast({ title: "Erfolg", description: "Bürgerwaffe wurde registriert" });
+      setShowCitizenDialog(false);
+      setCitizenFormData({
         serialNumber: "",
         weaponType: "",
         owner: "",
-        category: activeCategory,
-        status: activeCategory === "Dienstwaffe" ? "im Waffenschrank" : "beschlagnahmt",
+        category: "Bürgerwaffe",
+        status: "beschlagnahmt",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/weapons"] });
     } catch (error) {
-      toast({
-        title: "Fehler",
-        description: "Waffe konnte nicht registriert werden",
-        variant: "destructive",
-      });
+      toast({ title: "Fehler", description: "Bürgerwaffe konnte nicht registriert werden", variant: "destructive" });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingCitizen(false);
+    }
+  };
+
+  // Service Weapons Submit
+  const handleServiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingService(true);
+
+    try {
+      await apiRequest("POST", "/api/weapons", serviceFormData);
+      toast({ title: "Erfolg", description: "Dienstwaffe wurde registriert" });
+      setShowServiceDialog(false);
+      setServiceFormData({
+        serialNumber: "",
+        weaponType: "",
+        owner: "",
+        category: "Dienstwaffe",
+        status: "im Waffenschrank",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/weapons"] });
+    } catch (error) {
+      toast({ title: "Fehler", description: "Dienstwaffe konnte nicht registriert werden", variant: "destructive" });
+    } finally {
+      setIsSubmittingService(false);
     }
   };
 
   const handleStatusChange = async (weapon: Weapon, newStatus: WeaponStatus) => {
     try {
       await apiRequest("PATCH", `/api/weapons/${weapon.id}/status`, { status: newStatus });
-      
-      toast({
-        title: "Erfolg",
-        description: "Waffenstatus wurde aktualisiert",
-      });
-      
+      toast({ title: "Erfolg", description: "Waffenstatus wurde aktualisiert" });
       queryClient.invalidateQueries({ queryKey: ["/api/weapons"] });
     } catch (error) {
-      toast({
-        title: "Fehler",
-        description: "Status konnte nicht aktualisiert werden",
-        variant: "destructive",
-      });
+      toast({ title: "Fehler", description: "Status konnte nicht aktualisiert werden", variant: "destructive" });
     }
   };
 
   const handleDelete = async () => {
     if (!selectedWeapon) return;
-
     try {
       await apiRequest("DELETE", `/api/weapons/${selectedWeapon.id}`, {});
-      
-      toast({
-        title: "Erfolg",
-        description: "Waffe wurde gelöscht",
-      });
-      
+      toast({ title: "Erfolg", description: "Waffe wurde gelöscht" });
       setShowDeleteDialog(false);
       setSelectedWeapon(null);
       queryClient.invalidateQueries({ queryKey: ["/api/weapons"] });
     } catch (error) {
-      toast({
-        title: "Fehler",
-        description: "Waffe konnte nicht gelöscht werden",
-        variant: "destructive",
-      });
+      toast({ title: "Fehler", description: "Waffe konnte nicht gelöscht werden", variant: "destructive" });
     }
   };
 
   const getStatusBadgeVariant = (status: WeaponStatus) => {
-    // Dienstwaffen
     if (status === "im Waffenschrank") return "secondary";
     if (status === "vergeben") return "default";
-    // Bürgerwaffen
     if (status === "beschlagnahmt") return "destructive";
     if (status === "zurückgegeben") return "default";
     if (status === "vernichtet") return "outline";
@@ -182,11 +185,14 @@ export default function Weapons() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getStatusOptions().map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
+                    {weapon.category === "Dienstwaffe" 
+                      ? SERVICE_WEAPON_STATUS.map((status) => (
+                          <SelectItem key={status} value={status}>{status}</SelectItem>
+                        ))
+                      : CITIZEN_WEAPON_STATUS.map((status) => (
+                          <SelectItem key={status} value={status}>{status}</SelectItem>
+                        ))
+                    }
                   </SelectContent>
                 </Select>
               </TableCell>
@@ -218,160 +224,196 @@ export default function Weapons() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-serif font-bold text-foreground mb-2">Waffenverwaltung</h1>
-          <p className="text-muted-foreground">Verwaltung aller registrierten Waffen</p>
-        </div>
-        <Button 
-          onClick={() => {
-            setFormData({ ...formData, category: activeCategory });
-            setShowNewDialog(true);
-          }} 
-          data-testid="button-new-weapon"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Waffe registrieren
-        </Button>
+      <div>
+        <h1 className="text-4xl font-serif font-bold text-foreground mb-2">Waffenverwaltung</h1>
+        <p className="text-muted-foreground">Verwaltung beschlagnahmter Waffen und Dienst-Waffensysteme</p>
       </div>
 
-      <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as typeof activeCategory)}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="Bürgerwaffe" data-testid="tab-citizen-weapons">Bürgerwaffen</TabsTrigger>
-          <TabsTrigger value="Dienstwaffe" data-testid="tab-service-weapons">Dienstwaffen</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="Bürgerwaffe" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif">Bürgerwaffen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-12 text-muted-foreground">Laden...</div>
-              ) : citizenWeapons.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Keine Bürgerwaffen registriert</p>
-                </div>
-              ) : (
-                <WeaponsTable weapons={citizenWeapons} />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="Dienstwaffe" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif">Dienstwaffen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-12 text-muted-foreground">Laden...</div>
-              ) : serviceWeapons.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Keine Dienstwaffen registriert</p>
-                </div>
-              ) : (
-                <WeaponsTable weapons={serviceWeapons} />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* BÜRGERWAFFEN */}
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="font-serif">Beschlagnahmte Waffen</CardTitle>
+            <Button 
+              onClick={() => setShowCitizenDialog(true)}
+              size="sm"
+              data-testid="button-new-citizen-weapon"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Neue Waffe
+            </Button>
+          </CardHeader>
+          <CardContent className="flex-1">
+            {isLoading ? (
+              <div className="text-center py-12 text-muted-foreground">Laden...</div>
+            ) : citizenWeapons.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Keine Bürgerwaffen registriert</p>
+              </div>
+            ) : (
+              <WeaponsTable weapons={citizenWeapons} />
+            )}
+          </CardContent>
+        </Card>
 
-      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+        {/* DIENSTWAFFEN */}
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="font-serif">Dienst-Waffen</CardTitle>
+            <Button 
+              onClick={() => setShowServiceDialog(true)}
+              size="sm"
+              data-testid="button-new-service-weapon"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Neue Waffe
+            </Button>
+          </CardHeader>
+          <CardContent className="flex-1">
+            {isLoading ? (
+              <div className="text-center py-12 text-muted-foreground">Laden...</div>
+            ) : serviceWeapons.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Keine Dienstwaffen registriert</p>
+              </div>
+            ) : (
+              <WeaponsTable weapons={serviceWeapons} />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* CITIZEN WEAPONS DIALOG */}
+      <Dialog open={showCitizenDialog} onOpenChange={setShowCitizenDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-serif">Waffe registrieren</DialogTitle>
-            <DialogDescription>Erfassen Sie eine neue Waffe</DialogDescription>
+            <DialogTitle className="font-serif">Beschlagnahmte Waffe registrieren</DialogTitle>
+            <DialogDescription>Erfassen Sie eine neue Bürgerwaffe</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleCitizenSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="serialNumber">Seriennummer *</Label>
+              <Label htmlFor="citizen-serial">Seriennummer *</Label>
               <Input
-                id="serialNumber"
-                value={formData.serialNumber}
-                onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
+                id="citizen-serial"
+                value={citizenFormData.serialNumber}
+                onChange={(e) => setCitizenFormData({ ...citizenFormData, serialNumber: e.target.value })}
                 required
-                data-testid="input-serial-number"
+                data-testid="input-citizen-serial"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="weaponType">Waffentyp *</Label>
+              <Label htmlFor="citizen-type">Waffentyp *</Label>
               <Input
-                id="weaponType"
-                value={formData.weaponType}
-                onChange={(e) => setFormData({ ...formData, weaponType: e.target.value })}
+                id="citizen-type"
+                value={citizenFormData.weaponType}
+                onChange={(e) => setCitizenFormData({ ...citizenFormData, weaponType: e.target.value })}
                 placeholder="z.B. Revolver, Gewehr"
                 required
-                data-testid="input-weapon-type"
+                data-testid="input-citizen-type"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="owner">Besitzer *</Label>
+              <Label htmlFor="citizen-owner">Besitzer *</Label>
               <Input
-                id="owner"
-                value={formData.owner}
-                onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
+                id="citizen-owner"
+                value={citizenFormData.owner}
+                onChange={(e) => setCitizenFormData({ ...citizenFormData, owner: e.target.value })}
                 required
-                data-testid="input-owner"
+                data-testid="input-citizen-owner"
               />
             </div>
-
             <div className="space-y-2">
-              <Label htmlFor="category">Kategorie</Label>
+              <Label htmlFor="citizen-status">Status *</Label>
               <Select
-                value={formData.category}
-                onValueChange={(value) => {
-                  const newCategory = value as "Bürgerwaffe" | "Dienstwaffe";
-                  const newStatus = newCategory === "Dienstwaffe" ? "im Waffenschrank" : "beschlagnahmt";
-                  setFormData({ ...formData, category: newCategory, status: newStatus as WeaponStatus });
-                }}
+                value={citizenFormData.status}
+                onValueChange={(value) => setCitizenFormData({ ...citizenFormData, status: value as WeaponStatus })}
               >
-                <SelectTrigger data-testid="select-category">
+                <SelectTrigger data-testid="select-citizen-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Bürgerwaffe">Bürgerwaffe</SelectItem>
-                  <SelectItem value="Dienstwaffe">Dienstwaffe</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value as WeaponStatus })}
-              >
-                <SelectTrigger data-testid="select-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {getStatusOptions().map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
+                  {CITIZEN_WEAPON_STATUS.map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowNewDialog(false)}>
-                Abbrechen
-              </Button>
-              <Button type="submit" disabled={isSubmitting} data-testid="button-submit-weapon">
-                {isSubmitting ? "Speichern..." : "Waffe registrieren"}
+              <Button type="button" variant="outline" onClick={() => setShowCitizenDialog(false)}>Abbrechen</Button>
+              <Button type="submit" disabled={isSubmittingCitizen} data-testid="button-submit-citizen">
+                {isSubmittingCitizen ? "Speichern..." : "Waffe registrieren"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
+      {/* SERVICE WEAPONS DIALOG */}
+      <Dialog open={showServiceDialog} onOpenChange={setShowServiceDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-serif">Dienstwaffe registrieren</DialogTitle>
+            <DialogDescription>Erfassen Sie eine neue Dienst-Waffe</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleServiceSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="service-serial">Seriennummer *</Label>
+              <Input
+                id="service-serial"
+                value={serviceFormData.serialNumber}
+                onChange={(e) => setServiceFormData({ ...serviceFormData, serialNumber: e.target.value })}
+                required
+                data-testid="input-service-serial"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="service-type">Waffentyp *</Label>
+              <Input
+                id="service-type"
+                value={serviceFormData.weaponType}
+                onChange={(e) => setServiceFormData({ ...serviceFormData, weaponType: e.target.value })}
+                placeholder="z.B. Revolver, Gewehr"
+                required
+                data-testid="input-service-type"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="service-owner">Zugeordnet zu *</Label>
+              <Input
+                id="service-owner"
+                value={serviceFormData.owner}
+                onChange={(e) => setServiceFormData({ ...serviceFormData, owner: e.target.value })}
+                required
+                data-testid="input-service-owner"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="service-status">Status *</Label>
+              <Select
+                value={serviceFormData.status}
+                onValueChange={(value) => setServiceFormData({ ...serviceFormData, status: value as WeaponStatus })}
+              >
+                <SelectTrigger data-testid="select-service-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SERVICE_WEAPON_STATUS.map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowServiceDialog(false)}>Abbrechen</Button>
+              <Button type="submit" disabled={isSubmittingService} data-testid="button-submit-service">
+                {isSubmittingService ? "Speichern..." : "Waffe registrieren"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE DIALOG */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
