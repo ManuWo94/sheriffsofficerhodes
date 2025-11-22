@@ -45,9 +45,11 @@ export default function Cases() {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [editingStatus, setEditingStatus] = useState<Case | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editFormData, setEditFormData] = useState({ crime: "", notes: "", characteristics: "", photo: "" });
 
   const [formData, setFormData] = useState({
     caseNumber: "",
@@ -154,6 +156,23 @@ export default function Cases() {
     }
   };
 
+  const handleEditCase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCase) return;
+    setIsSubmitting(true);
+
+    try {
+      await apiRequest("PATCH", `/api/cases/${selectedCase.id}`, editFormData);
+      toast({ title: "Erfolg", description: "Fallakte wurde aktualisiert" });
+      setShowEditDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+    } catch (error) {
+      toast({ title: "Fehler", description: "Aktualisierung fehlgeschlagen", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStatusBadgeVariant = (status: CaseStatus) => {
     switch (status) {
       case "offen": return "destructive";
@@ -247,6 +266,18 @@ export default function Cases() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedCase(caseItem);
+                              setEditFormData({ crime: caseItem.crime, notes: caseItem.notes, characteristics: caseItem.characteristics || "", photo: caseItem.photo });
+                              setShowEditDialog(true);
+                            }}
+                            data-testid={`button-edit-case-${caseItem.id}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

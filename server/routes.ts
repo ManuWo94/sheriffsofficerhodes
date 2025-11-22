@@ -186,6 +186,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/cases/:id", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const caseData = await storage.getCaseById(id);
+      if (!caseData) {
+        return res.status(404).json({ message: "Fallakte nicht gefunden" });
+      }
+      
+      await storage.updateCase(id, updates);
+      
+      await logAudit("Fallakte bearbeitet", "case", id, `Fallakte ${caseData.caseNumber} wurde aktualisiert`, req.session.username);
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
   app.patch("/api/cases/:id/status", requireAuth, async (req: any, res) => {
     try {
       const { id } = req.params;

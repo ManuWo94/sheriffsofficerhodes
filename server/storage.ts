@@ -25,6 +25,7 @@ export interface IStorage {
   getAllCases(): Promise<Case[]>;
   getCaseById(id: string): Promise<Case | undefined>;
   createCase(caseData: InsertCase): Promise<Case>;
+  updateCase(id: string, updates: Partial<Omit<Case, 'id' | 'createdAt'>>): Promise<void>;
   updateCaseStatus(id: string, status: string): Promise<void>;
   deleteCase(id: string): Promise<void>;
 
@@ -162,6 +163,15 @@ export class MemStorage implements IStorage {
     };
     this.cases.set(id, caseData);
     return caseData;
+  }
+
+  async updateCase(id: string, updates: Partial<Omit<Case, 'id' | 'createdAt'>>): Promise<void> {
+    const caseData = this.cases.get(id);
+    if (caseData) {
+      Object.assign(caseData, updates);
+      caseData.updatedAt = new Date();
+      this.cases.set(id, caseData);
+    }
   }
 
   async updateCaseStatus(id: string, status: string): Promise<void> {
