@@ -4,8 +4,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { ThemeProvider } from "@/lib/theme";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Cases from "@/pages/cases";
@@ -39,6 +41,7 @@ function AuthenticatedApp() {
           <header className="flex items-center gap-4 p-4 border-b border-border bg-background">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex-1" />
+            <ThemeToggle />
           </header>
           <main className="flex-1 overflow-y-auto bg-background p-6">
             <div className="max-w-7xl mx-auto">
@@ -66,12 +69,14 @@ function AuthenticatedApp() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <AuthenticatedApp />
-        </AuthProvider>
-        <Toaster />
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AuthProvider>
+            <AuthenticatedApp />
+          </AuthProvider>
+          <Toaster />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
