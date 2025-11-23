@@ -269,9 +269,14 @@ export default function Cases() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => {
+                              onClick={() => {
                               setSelectedCase(caseItem);
-                              setEditFormData({ crime: caseItem.crime, notes: caseItem.notes, characteristics: caseItem.characteristics || "", photo: caseItem.photo });
+                              setEditFormData({
+                                crime: caseItem.crime,
+                                notes: caseItem.notes ?? "",
+                                characteristics: caseItem.characteristics ?? "",
+                                photo: caseItem.photo ?? "",
+                              });
                               setShowEditDialog(true);
                             }}
                             data-testid={`button-edit-case-${caseItem.id}`}

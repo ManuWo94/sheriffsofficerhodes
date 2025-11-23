@@ -17,8 +17,8 @@ export async function apiRequest(
   const res = await fetch(url, {
     method,
     headers: {
-      ...(data && { "Content-Type": "application/json" }),
-      ...(sessionToken && { "x-session-token": sessionToken }),
+      ...(data ? { "Content-Type": "application/json" } : {}),
+      ...(sessionToken ? { "x-session-token": sessionToken } : {}),
     },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
@@ -45,7 +45,7 @@ export const getQueryFn: <T>(options: {
     
     const res = await fetch(queryKey.join("/") as string, {
       headers: {
-        ...(sessionToken && { "x-session-token": sessionToken }),
+        ...(sessionToken ? { "x-session-token": sessionToken } : {}),
       },
       credentials: "include",
     });
