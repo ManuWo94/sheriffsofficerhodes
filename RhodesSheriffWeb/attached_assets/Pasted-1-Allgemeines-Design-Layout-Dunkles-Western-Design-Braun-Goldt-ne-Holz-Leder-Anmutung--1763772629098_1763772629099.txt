@@ -1,0 +1,305 @@
+1. Allgemeines Design & Layout
+
+Dunkles Western-Design (Braun-/Goldtöne, Holz-/Leder-Anmutung).
+
+Modernes „MDT-Panel“-Layout (Seitenleiste links mit Navigation, Hauptbereich rechts).
+
+Verwendung eines Sheriff-Badge-Logos (Platzhalter-Bild/ -div einbauen, damit ich später mein Logo ersetzen kann).
+
+Voll responsive (Desktop und Handy nutzbar).
+
+Übersichtlicher Dashboard-Stil mit Karten (Cards) und Statistiken.
+
+2. Benutzer- und Rollensystem
+
+Es gibt ein Login mit Benutzername und Passwort (Clientseitige Simulation):
+
+Benutzer melden sich mit Name + Passwort an.
+
+Ein Benutzer mit Admin-Rechten (Sheriff) kann neue Benutzer anlegen und Startpasswörter vergeben.
+
+Nach dem ersten Login soll ein Benutzer sein Passwort ändern können (einfache Logik reicht).
+
+Ränge (bitte exakt so anlegen und anzeigen):
+
+Trainee
+
+Deputy Junior
+
+Deputy Sheriff
+
+Deputy Senior
+
+Deputy Sergeant
+
+Chief Deputy
+
+Sheriff
+
+Rechte:
+
+Löschen von Datensätzen (Fälle, Waffen, Bußgelder, Inhaftierungen etc.) dürfen nur:
+
+Sheriff
+
+Chief Deputy
+
+Deputy Sergeant
+
+Andere Ränge dürfen anlegen/bearbeiten, aber nicht löschen.
+
+3. Dashboard
+
+Eine Startseite nach Login mit:
+
+Anzahl aktiver/offener Fallakten
+
+Anzahl aktueller Inhaftierter
+
+Anzahl registrierter Waffen
+
+Letzte Aktivitäten (z.B. „Fallakte angelegt“, „Inhaftierung beendet“, „Waffe beschlagnahmt“) als Liste.
+
+4. Fallakten-System
+
+Ein Bereich „Fallakten“ mit:
+
+Formular zum Anlegen/Ändern von Fällen mit Feldern:
+
+Aktennummer
+
+Person (Name)
+
+Delikt(e)
+
+Status (offen / in Bearbeitung / abgeschlossen)
+
+Notizen / Beschreibung
+
+optional: Foto-Upload zur Person (als Data-URL im Speicher)
+
+optionale Merkmale (z. B. „Narbe über dem linken Auge“)
+
+Die aktuell eingeloggte Person wird als Bearbeiter / zuständiger Deputy automatisch eingetragen.
+
+In einer Tabelle werden alle Fälle angezeigt mit:
+
+Aktennummer, Person, Delikt, Status, Bearbeiter, Aktionen
+
+Aktionen je Fall:
+
+Details anzeigen (Popup/Alert mit allen Infos)
+
+Status ändern (per Prompt oder kleines Dropdown → Status wird aktualisiert)
+
+Löschen (nur für Sheriff/Chief Deputy/Deputy Sergeant, mit Bestätigungsdialog)
+
+Jede Änderung (neue Akte, Statusänderung, Löschen) schreibt einen Eintrag ins Protokoll/Aktivitätslog.
+
+5. Personenakte (Personen-Übersicht)
+
+Ein Bereich „Personenakte“ mit:
+
+Automatischer Zusammenführung aller Personen, die in Fallakten vorkommen.
+
+Pro Person:
+
+Name
+
+Foto (wenn in irgendeinem Fall hochgeladen)
+
+Merkmale (wenn in Fällen erfasst)
+
+Anzahl der Fälle
+
+letzte bekannte Strafe/Delikt (aus der jüngsten Fallakte)
+
+Button „Historie“, der alle zugehörigen Fälle (mit Datum, Aktennummer, Delikt) in einem Popup/Alert anzeigt.
+
+Diese Ansicht wird dynamisch aus den Fallakten erzeugt (keine doppelte Datenspeicherung).
+
+6. Gefängnisverwaltung (Jail)
+
+Ein Bereich „Gefängnis“ mit:
+
+Formular „Inhaftieren“ mit Feldern:
+
+Name
+
+Delikt
+
+Dauer in Minuten
+
+Die aktuelle Uhrzeit beim Anlegen wird gespeichert.
+
+Der aktuell eingeloggte Benutzer wird als zuständiger Sheriff/Deputy gespeichert.
+
+Tabelle mit:
+
+Name, Delikt, Gesamtdauer (Minuten), Restzeit (laufender Timer in mm:ss), zuständiger Beamter, Aktionen
+
+Restzeit läuft clientseitig herunter.
+
+Wenn Restzeit ≤ 0:
+
+Anzeige „abgelaufen“ oder ähnlich.
+
+Aktionen:
+
+„Entlassen“ → entfernt die Person aus der Liste (oder markiert als beendet) und schreibt in das Protokoll.
+
+„Löschen“ (nur Sheriff/Chief Deputy/Deputy Sergeant) → Datensatz wird komplett entfernt, z.B. für Korrekturen.
+
+7. Bußgeldkatalog & Suchfunktion
+
+Ein Bereich „Bußgelder“ mit:
+
+Formular zum Anlegen eines Bußgeld-Eintrags mit:
+
+Verstoß / Bezeichnung
+
+Betrag in $
+
+Bemerkung (z. B. „Spanne je nach Schwere“)
+
+Eine Tabelle mit allen Bußgeldern.
+
+Suchfunktion:
+
+Ein Suchfeld, mit dem nach Text im Verstoß-Namen und in Bemerkungen gefiltert werden kann (Live-Filter oder per Button).
+
+Löschen von Bußgeldern nur durch Sheriff/Chief Deputy/Deputy Sergeant.
+
+8. Stadtgesetze
+
+Ein Bereich „Stadtgesetze“ mit:
+
+großem Textfeld für Gesetzestexte.
+
+Button „Gesetze speichern (Session)“ – speichert nur für die aktuelle Session (z. B. in einer JS-Variable / optional localStorage).
+
+Änderungen sollen im Protokoll erfasst werden.
+
+9. Waffenverwaltung
+
+Ein Bereich „Waffenverwaltung“ mit zwei Kategorien:
+
+Bürger-Waffenregister
+
+Dienstwaffen des Offices
+
+Gemeinsame Funktionen:
+
+Felder:
+
+Seriennummer
+
+Waffentyp (z. B. Revolver, Gewehr)
+
+Besitzer (Person oder Deputy)
+
+Kategorie (Bürgerwaffe / Dienstwaffe)
+
+Status-Feld mit mind. den Zuständen:
+
+„registriert“
+
+„beschlagnahmt“
+
+„zurückgegeben“
+
+Möglichkeit, den Status zu ändern, z. B. über Button oder Dropdown; bei jeder Statusänderung wird:
+
+automatisch ein Zeitstempel (Datum + Uhrzeit) gespeichert
+
+ein Eintrag im Protokoll erzeugt (z. B. „Waffe XYZ von registriert → beschlagnahmt, Zeitstempel…“).
+
+Waffen können nur von berechtigten Rängen gelöscht werden (Sheriff/Chief Deputy/Deputy Sergeant).
+
+Dienstwaffen (Office-Registrierungen) sollen als solche erkennbar sein (z. B. separate Tabelle oder Spalte „Dienstwaffe: Ja/Nein“).
+
+10. Personalverwaltung & Aufgabenlisten
+
+Ein Bereich „Personal“ mit:
+
+Auflistung aller Benutzer mit:
+
+Benutzername
+
+Rang
+
+Formular „Benutzer anlegen“ (nur sinnvoll für Sheriff/Admin):
+
+Benutzername
+
+Startpasswort
+
+Rang (aus der obigen Liste)
+
+Zusätzlich eine Aufgaben-/Auftragsverwaltung:
+
+Sheriff, Deputy Sheriff und Deputy Sergeant können Aufgaben an Benutzer verteilen.
+
+Aufgabe enthält:
+
+Titel
+
+Beschreibung
+
+Zuständiger Benutzer
+
+Status (offen / in Bearbeitung / erledigt)
+
+Der zuständige Benutzer sieht seine Aufgaben in einer eigenen Liste und kann sie als „erledigt“ markieren.
+
+Aktionen erzeugen Einträge im Protokoll (z. B. „Aufgabe X an Deputy Y vergeben“, „Aufgabe von Y erledigt“).
+
+Eine einfache „Übergabefunktion“: z. B. Aufgabe auf einen anderen Benutzer übertragen (mit Protokolleintrag).
+
+11. Notizen & Protokoll (global & benutzerspezifisch)
+
+Es soll zwei Ebenen von Notizen geben:
+
+Gemeinsame Notizen / globales Protokoll
+
+Eine Art „Board“ oder Liste, auf die alle zugreifen können.
+
+Wird z.B. verwendet für allgemeine Hinweise, Lagenotizen oder Schichtinfos.
+
+Jeder Eintrag enthält: Autor (aktueller Benutzer), Text, Zeitstempel.
+
+Benutzerspezifische Notizen
+
+Jeder Benutzer hat einen eigenen Bereich mit privaten Notizen.
+
+Nur der eingeloggte Benutzer sieht seine privat gespeicherten Notizen.
+
+Ebenfalls mit Zeitstempel.
+
+Zusätzlich soll es ein Audit-Log / Protokoll-Modul geben:
+
+Listet alle Systemaktionen auf (z. B. Logins, neue Fälle, Statusänderungen, Haftbeginn/Ende, Waffenstatuswechsel, Aufgabenerstellung).
+
+Sortiert nach Datum, neueste oben.
+
+Anzeige im Dashboard („Letzte X Aktivitäten“) und in einer eigenen Protokoll-Ansicht.
+
+12. Technik & Struktur
+
+Alles in einer einzigen HTML-Datei:
+
+<style>-Block für CSS
+
+<script>-Block für JavaScript
+
+Keine externen Frameworks (kein React, kein Vue etc.).
+
+Reines Vanilla-JavaScript (ES5/ES6 kompatibel).
+
+Alle Daten werden in JavaScript-Objekten gehalten (optional zusätzlich im localStorage für Persistenz).
+
+Die UI wird bei jeder Änderung neu gerendert (z. B. durch Funktionen wie renderCases(), renderJail(), etc.).
+
+Bitte strukturiert und gut kommentiert programmieren, damit ich später einzelne Bereiche leicht anpassen kann.
+
+Ziel ist ein modernes, aber thematisch zum Jahr 1899 passendes Verwaltungssystem für ein Sheriffs Office im Roleplay, mit klaren Rechten pro Rang und einem starken Fokus auf Fälle, Personenverwaltung, Gefängnis, Waffenregister, Notizen und Aufgabensteuerung.

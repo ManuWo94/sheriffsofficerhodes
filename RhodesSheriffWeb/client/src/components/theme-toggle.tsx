@@ -1,0 +1,23 @@
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/lib/theme";
+
+export function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      data-testid="button-theme-toggle"
+      title={theme === "light" ? "Zu Dark Mode wechseln" : "Zu Light Mode wechseln"}
+    >
+      {theme === "light" ? (
+        <Moon className="w-4 h-4" />
+      ) : (
+        <Sun className="w-4 h-4" />
+      )}
+    </Button>
+  );
+}
