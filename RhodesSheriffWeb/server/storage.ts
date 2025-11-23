@@ -12,6 +12,8 @@ import {
   type PersonSummary,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
 
 export interface IStorage {
   // Users
@@ -110,6 +112,104 @@ export class MemStorage implements IStorage {
       mustChangePassword: 0,
     };
     this.users.set(defaultUser.id, defaultUser);
+    // Load persisted state if available
+    try {
+      const dataDir = path.join(process.cwd(), "data");
+      const storageFile = path.join(dataDir, "storage.json");
+      if (fs.existsSync(storageFile)) {
+        const raw = fs.readFileSync(storageFile, "utf8");
+        const parsed = JSON.parse(raw);
+        // helper to revive dates for known fields
+        const reviveDates = (obj: any) => {
+          if (!obj || typeof obj !== "object") return obj;
+          for (const k of Object.keys(obj)) {
+            const v = obj[k];
+            if (typeof v === "string" && /\d{4}-\d{2}-\d{2}T/.test(v)) {
+              obj[k] = new Date(v);
+            }
+          }
+          return obj;
+        };
+
+        if (parsed.users) {
+          for (const u of parsed.users) {
+            this.users.set(u.id, reviveDates(u));
+          }
+        }
+        if (parsed.cases) {
+          for (const c of parsed.cases) {
+            this.cases.set(c.id, reviveDates(c));
+          }
+        }
+        if (parsed.jailRecords) {
+          for (const j of parsed.jailRecords) {
+            this.jailRecords.set(j.id, reviveDates(j));
+          }
+        }
+        if (parsed.fines) {
+          for (const f of parsed.fines) {
+            this.fines.set(f.id, reviveDates(f));
+          }
+        }
+        if (parsed.cityLaws) {
+          this.cityLaws = reviveDates(parsed.cityLaws);
+        }
+        if (parsed.weapons) {
+          for (const w of parsed.weapons) {
+            this.weapons.set(w.id, reviveDates(w));
+          }
+        }
+        if (parsed.tasks) {
+          for (const t of parsed.tasks) {
+            this.tasks.set(t.id, reviveDates(t));
+          }
+        }
+        if (parsed.globalNotes) {
+          for (const n of parsed.globalNotes) {
+            this.globalNotes.set(n.id, reviveDates(n));
+          }
+        }
+        if (parsed.userNotes) {
+          for (const n of parsed.userNotes) {
+            this.userNotes.set(n.id, reviveDates(n));
+          }
+        }
+        if (parsed.auditLogs) {
+          for (const l of parsed.auditLogs) {
+            this.auditLogs.set(l.id, reviveDates(l));
+          }
+        }
+      }
+    } catch (e) {
+      // ignore errors during load
+    }
+  }
+
+  private getStorageFilePath() {
+    const dataDir = path.join(process.cwd(), "data");
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    return path.join(dataDir, "storage.json");
+  }
+
+  private saveState() {
+    try {
+      const obj: any = {
+        users: Array.from(this.users.values()),
+        cases: Array.from(this.cases.values()),
+        jailRecords: Array.from(this.jailRecords.values()),
+        fines: Array.from(this.fines.values()),
+        cityLaws: this.cityLaws,
+        weapons: Array.from(this.weapons.values()),
+        tasks: Array.from(this.tasks.values()),
+        globalNotes: Array.from(this.globalNotes.values()),
+        userNotes: Array.from(this.userNotes.values()),
+        auditLogs: Array.from(this.auditLogs.values()),
+      };
+      const file = this.getStorageFilePath();
+      fs.writeFileSync(file, JSON.stringify(obj, null, 2), "utf8");
+    } catch (e) {
+      // ignore save errors
+    }
   }
 
   // Users
@@ -135,6 +235,7 @@ export class MemStorage implements IStorage {
       mustChangePassword: insertUser.mustChangePassword ?? 0,
     };
     this.users.set(id, user);
+    this.saveState();
     return user;
   }
 
@@ -144,6 +245,7 @@ export class MemStorage implements IStorage {
       user.password = newPassword;
       user.mustChangePassword = 0;
       this.users.set(userId, user);
+      this.saveState();
     }
   }
 
@@ -175,6 +277,7 @@ export class MemStorage implements IStorage {
       updatedAt: now,
     };
     this.cases.set(id, caseData);
+    this.saveState();
     return caseData;
   }
 
@@ -184,6 +287,7 @@ export class MemStorage implements IStorage {
       Object.assign(caseData, updates);
       caseData.updatedAt = new Date();
       this.cases.set(id, caseData);
+      this.saveState();
     }
   }
 
@@ -193,11 +297,13 @@ export class MemStorage implements IStorage {
       caseData.status = status as any;
       caseData.updatedAt = new Date();
       this.cases.set(id, caseData);
+      this.saveState();
     }
   }
 
   async deleteCase(id: string): Promise<void> {
     this.cases.delete(id);
+    this.saveState();
   }
 
   // Persons
@@ -264,6 +370,7 @@ export class MemStorage implements IStorage {
       releasedAt: null,
     };
     this.jailRecords.set(id, record);
+    this.saveState();
     return record;
   }
 
@@ -273,11 +380,13 @@ export class MemStorage implements IStorage {
       record.released = 1;
       record.releasedAt = new Date();
       this.jailRecords.set(id, record);
+      this.saveState();
     }
   }
 
   async deleteJailRecord(id: string): Promise<void> {
     this.jailRecords.delete(id);
+    this.saveState();
   }
 
   // Fines
@@ -294,11 +403,13 @@ export class MemStorage implements IStorage {
       remarks: insertFine.remarks ?? null,
     };
     this.fines.set(id, fine);
+    this.saveState();
     return fine;
   }
 
   async deleteFine(id: string): Promise<void> {
     this.fines.delete(id);
+    this.saveState();
   }
 
   // City Laws
@@ -314,6 +425,7 @@ export class MemStorage implements IStorage {
       updatedBy: insertLaws.updatedBy,
     };
     this.cityLaws = laws;
+    this.saveState();
     return laws;
   }
 
@@ -345,6 +457,7 @@ export class MemStorage implements IStorage {
       updatedBy: createdBy,
     };
     this.weapons.set(id, weapon);
+    this.saveState();
     return weapon;
   }
 
@@ -356,11 +469,13 @@ export class MemStorage implements IStorage {
       weapon.updatedAt = new Date();
       weapon.updatedBy = updatedBy;
       this.weapons.set(id, weapon);
+      this.saveState();
     }
   }
 
   async deleteWeapon(id: string): Promise<void> {
     this.weapons.delete(id);
+    this.saveState();
   }
 
   // Tasks
@@ -388,6 +503,7 @@ export class MemStorage implements IStorage {
       updatedAt: now,
     };
     this.tasks.set(id, task);
+    this.saveState();
     return task;
   }
 
@@ -397,6 +513,7 @@ export class MemStorage implements IStorage {
       task.status = status as any;
       task.updatedAt = new Date();
       this.tasks.set(id, task);
+      this.saveState();
     }
   }
 
@@ -406,6 +523,7 @@ export class MemStorage implements IStorage {
       task.assignedTo = assignedTo;
       task.updatedAt = new Date();
       this.tasks.set(id, task);
+      this.saveState();
     }
   }
 
@@ -428,6 +546,7 @@ export class MemStorage implements IStorage {
       updatedBy: insertNote.author,
     };
     this.globalNotes.set(id, note);
+    this.saveState();
     return note;
   }
 
@@ -438,6 +557,7 @@ export class MemStorage implements IStorage {
       note.updatedAt = new Date();
       note.updatedBy = updatedBy;
       this.globalNotes.set(id, note);
+      this.saveState();
     }
   }
 
@@ -458,6 +578,7 @@ export class MemStorage implements IStorage {
       updatedAt: now,
     };
     this.userNotes.set(id, note);
+    this.saveState();
     return note;
   }
 
@@ -467,15 +588,18 @@ export class MemStorage implements IStorage {
       note.content = content;
       note.updatedAt = new Date();
       this.userNotes.set(id, note);
+      this.saveState();
     }
   }
 
   async deleteGlobalNote(id: string): Promise<void> {
     this.globalNotes.delete(id);
+    this.saveState();
   }
 
   async deleteUserNote(id: string): Promise<void> {
     this.userNotes.delete(id);
+    this.saveState();
   }
 
   // Audit Logs
@@ -502,6 +626,7 @@ export class MemStorage implements IStorage {
       timestamp: new Date(),
     };
     this.auditLogs.set(id, log);
+    this.saveState();
     return log;
   }
 }
