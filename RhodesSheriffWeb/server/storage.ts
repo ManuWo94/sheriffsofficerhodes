@@ -212,9 +212,35 @@ export class MemStorage implements IStorage {
       const data = JSON.stringify(obj, null, 2);
       fs.writeFileSync(tmpFile, data, "utf8");
       try {
+        // ensure data is flushed to disk
+        const fd = fs.openSync(tmpFile, "r");
+        try {
+          if (typeof fs.fdatasyncSync === "function") {
+            // prefer fdatasync when available
+            (fs as any).fdatasyncSync(fd);
+          } else {
+            fs.fsyncSync(fd);
+          }
+        } finally {
+          fs.closeSync(fd);
+        }
+
+        // rename into place
         fs.renameSync(tmpFile, file);
+
+        // fsync the directory to ensure the rename is durable
+        try {
+          const dirFd = fs.openSync(path.dirname(file), "r");
+          try {
+            fs.fsyncSync(dirFd);
+          } finally {
+            fs.closeSync(dirFd);
+          }
+        } catch (e) {
+          // ignore dir fsync errors
+        }
       } catch (e) {
-        // If rename fails, try a fallback: write directly to target
+        // If anything fails, fallback to direct write
         try {
           fs.writeFileSync(file, data, "utf8");
           if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
