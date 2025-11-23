@@ -206,7 +206,22 @@ export class MemStorage implements IStorage {
         auditLogs: Array.from(this.auditLogs.values()),
       };
       const file = this.getStorageFilePath();
-      fs.writeFileSync(file, JSON.stringify(obj, null, 2), "utf8");
+      const dir = path.dirname(file);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const tmpFile = `${file}.tmp`;
+      const data = JSON.stringify(obj, null, 2);
+      fs.writeFileSync(tmpFile, data, "utf8");
+      try {
+        fs.renameSync(tmpFile, file);
+      } catch (e) {
+        // If rename fails, try a fallback: write directly to target
+        try {
+          fs.writeFileSync(file, data, "utf8");
+          if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+        } catch (e2) {
+          // ignore fallback errors
+        }
+      }
     } catch (e) {
       // ignore save errors
     }
