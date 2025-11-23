@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { DELETE_PERMISSIONS, TASK_ASSIGN_PERMISSIONS } from "@shared/schema";
 
@@ -642,6 +644,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         registeredWeapons: weapons.length,
       });
     } catch (error) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
+  // Admin storage endpoints (export/import/reset/save/status)
+  function requireSheriff(req: any, res: any, next: any) {
+    if (req.session.rank !== "Sheriff") {
+      return res.status(403).json({ message: "Nur Sheriff kann diese Aktion ausführen" });
+    }
+    next();
+  }
+
+  app.get("/api/admin/storage/export", requireAuth, async (req: any, res) => {
+    try {
+      const state = await storage.exportState();
+      res.json(state);
+    } catch (e) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
+  app.post("/api/admin/storage/import", requireAuth, requireSheriff, async (req: any, res) => {
+    try {
+      const body = req.body;
+      if (!body) return res.status(400).json({ message: "Body erforderlich" });
+      await storage.importState(body);
+      await logAudit("Storage importiert", "storage", null, `Storage importiert durch ${req.session.username}`, req.session.username);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
+  app.post("/api/admin/storage/reset", requireAuth, requireSheriff, async (req: any, res) => {
+    try {
+      await storage.resetToSeed();
+      await logAudit("Storage zurückgesetzt", "storage", null, `Storage auf Seed zurückgesetzt durch ${req.session.username}`, req.session.username);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
+  app.post("/api/admin/storage/save", requireAuth, async (req: any, res) => {
+    try {
+      await storage.saveNow();
+      await logAudit("Storage gespeichert", "storage", null, `Storage manuell gespeichert durch ${req.session.username}`, req.session.username);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ message: "Server-Fehler" });
+    }
+  });
+
+  app.get("/api/admin/storage/status", requireAuth, async (req: any, res) => {
+    try {
+      const file = path.join(process.cwd(), "data", "storage.json");
+      if (!fs.existsSync(file)) return res.json({ exists: false });
+      const stat = fs.statSync(file);
+      res.json({ exists: true, size: stat.size, mtime: stat.mtime });
+    } catch (e) {
       res.status(500).json({ message: "Server-Fehler" });
     }
   });

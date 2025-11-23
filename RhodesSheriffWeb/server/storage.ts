@@ -185,6 +185,115 @@ export class MemStorage implements IStorage {
     }
   }
 
+  // Helper to revive dates in loaded objects
+  private reviveDates(obj: any) {
+    if (!obj || typeof obj !== "object") return obj;
+    for (const k of Object.keys(obj)) {
+      const v = obj[k];
+      if (typeof v === "string" && /\d{4}-\d{2}-\d{2}T/.test(v)) {
+        obj[k] = new Date(v);
+      }
+    }
+    return obj;
+  }
+
+  // Export current state as plain JS object (serializable)
+  async exportState(): Promise<any> {
+    const obj: any = {
+      users: Array.from(this.users.values()),
+      cases: Array.from(this.cases.values()),
+      jailRecords: Array.from(this.jailRecords.values()),
+      fines: Array.from(this.fines.values()),
+      cityLaws: this.cityLaws,
+      weapons: Array.from(this.weapons.values()),
+      tasks: Array.from(this.tasks.values()),
+      globalNotes: Array.from(this.globalNotes.values()),
+      userNotes: Array.from(this.userNotes.values()),
+      auditLogs: Array.from(this.auditLogs.values()),
+    };
+    return obj;
+  }
+
+  // Import state from a plain object (replaces current in-memory data)
+  async importState(state: any): Promise<void> {
+    // clear current maps
+    this.users.clear();
+    this.cases.clear();
+    this.jailRecords.clear();
+    this.fines.clear();
+    this.weapons.clear();
+    this.tasks.clear();
+    this.globalNotes.clear();
+    this.userNotes.clear();
+    this.auditLogs.clear();
+
+    const revive = (o: any) => this.reviveDates(o);
+
+    if (state.users) {
+      for (const u of state.users) this.users.set(u.id, revive(u));
+    }
+    if (state.cases) {
+      for (const c of state.cases) this.cases.set(c.id, revive(c));
+    }
+    if (state.jailRecords) {
+      for (const j of state.jailRecords) this.jailRecords.set(j.id, revive(j));
+    }
+    if (state.fines) {
+      for (const f of state.fines) this.fines.set(f.id, revive(f));
+    }
+    if (state.cityLaws) this.cityLaws = revive(state.cityLaws);
+    if (state.weapons) {
+      for (const w of state.weapons) this.weapons.set(w.id, revive(w));
+    }
+    if (state.tasks) {
+      for (const t of state.tasks) this.tasks.set(t.id, revive(t));
+    }
+    if (state.globalNotes) {
+      for (const n of state.globalNotes) this.globalNotes.set(n.id, revive(n));
+    }
+    if (state.userNotes) {
+      for (const n of state.userNotes) this.userNotes.set(n.id, revive(n));
+    }
+    if (state.auditLogs) {
+      for (const l of state.auditLogs) this.auditLogs.set(l.id, revive(l));
+    }
+
+    // persist imported state
+    this.saveState();
+  }
+
+  // Reset runtime storage from seed file (if present)
+  async resetToSeed(): Promise<void> {
+    try {
+      const seedPath = path.join(process.cwd(), "data", "storage.seed.json");
+      if (fs.existsSync(seedPath)) {
+        const raw = fs.readFileSync(seedPath, "utf8");
+        const parsed = JSON.parse(raw);
+        await this.importState(parsed);
+      } else {
+        // no seed: clear and save empty
+        await this.importState({
+          users: [],
+          cases: [],
+          jailRecords: [],
+          fines: [],
+          weapons: [],
+          tasks: [],
+          globalNotes: [],
+          userNotes: [],
+          auditLogs: [],
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Expose save trigger
+  async saveNow(): Promise<void> {
+    this.saveState();
+  }
+
   private getStorageFilePath() {
     const dataDir = path.join(process.cwd(), "data");
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
