@@ -8,6 +8,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 
 import viteConfig from "../vite.config";
 import runApp from "./app";
+import startAdminServer from "./admin-server";
 
 export async function setupVite(app: Express, server: Server) {
   const viteLogger = createLogger();
@@ -31,11 +32,16 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
-
+  // Only run Vite middleware for non-API requests
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    return vite.middlewares(req as any, res as any, next as any);
+  });
+  // Serve client index.html for non-API requests only
+  app.use(async (req, res, next) => {
     try {
+      if (req.path.startsWith('/api')) return next();
+      const url = req.originalUrl;
       const clientTemplate = path.resolve(
         import.meta.dirname,
         "..",
@@ -59,5 +65,13 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 (async () => {
+  // start a small admin server on port 5001 to avoid Vite middleware interference
+  try {
+    startAdminServer(5001);
+    console.log('[admin] attempted to start on port 5001');
+  } catch (e) {
+    console.error('[admin] failed to start admin server', e);
+  }
+
   await runApp(setupVite);
 })();

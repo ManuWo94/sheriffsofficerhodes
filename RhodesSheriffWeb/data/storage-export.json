@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "id": "2b684f58-b401-44b4-a9f0-98dc96b4a1ad",
+      "username": "sheriff",
+      "password": "admin123",
+      "rank": "Sheriff",
+      "mustChangePassword": 0
+    }
+  ],
+  "cases": [],
+  "jailRecords": [],
+  "fines": [],
+  "weapons": [],
+  "tasks": [],
+  "globalNotes": [],
+  "userNotes": [],
+  "auditLogs": []
+}

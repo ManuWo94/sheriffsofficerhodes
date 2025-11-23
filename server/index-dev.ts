@@ -31,11 +31,17 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
+  // Only run Vite middleware for non-API requests
+  app.use((req, res, next) => {
+    if (req.path && req.path.startsWith('/api')) return next();
+    return vite.middlewares(req as any, res as any, next as any);
+  });
 
+  // Serve client index.html for non-API requests only
+  app.use(async (req, res, next) => {
     try {
+      if (req.path && req.path.startsWith('/api')) return next();
+      const url = req.originalUrl;
       const clientTemplate = path.resolve(
         import.meta.dirname,
         "..",
