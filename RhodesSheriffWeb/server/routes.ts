@@ -659,7 +659,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/storage/export", requireAuth, async (req: any, res) => {
     try {
       const state = await storage.exportState();
-      res.json(state);
+      const payload = JSON.stringify(state, null, 2);
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Content-Disposition", 'attachment; filename="storage-export.json"');
+      res.send(payload);
     } catch (e) {
       res.status(500).json({ message: "Server-Fehler" });
     }
@@ -669,6 +672,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const body = req.body;
       if (!body) return res.status(400).json({ message: "Body erforderlich" });
+
+      const dryRun = req.query?.dryRun === "1" || req.query?.dryRun === "true";
+      const validation = await storage.validateState(body);
+      if (dryRun) {
+        return res.json({ dryRun: true, ...validation });
+      }
+
+      if (!validation.valid) {
+        return res.status(400).json({ message: "Validation failed", errors: validation.errors });
+      }
+
       await storage.importState(body);
       await logAudit("Storage importiert", "storage", null, `Storage importiert durch ${req.session.username}`, req.session.username);
       res.json({ success: true });

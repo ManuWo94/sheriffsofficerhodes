@@ -214,6 +214,55 @@ export class MemStorage implements IStorage {
     return obj;
   }
 
+  // Basic validation of an imported state. Returns {valid, errors[]}
+  async validateState(state: any): Promise<{ valid: boolean; errors: string[] }> {
+    const errors: string[] = [];
+    if (!state || typeof state !== "object") {
+      errors.push("State must be an object");
+      return { valid: false, errors };
+    }
+
+    const expectArray = [
+      "users",
+      "cases",
+      "jailRecords",
+      "fines",
+      "weapons",
+      "tasks",
+      "globalNotes",
+      "userNotes",
+      "auditLogs",
+    ];
+
+    for (const key of expectArray) {
+      if (state[key] !== undefined && !Array.isArray(state[key])) {
+        errors.push(`${key} must be an array`);
+      }
+    }
+
+    // spot-check some entity shapes
+    if (Array.isArray(state.users)) {
+      for (const u of state.users) {
+        if (!u.id || typeof u.id !== "string") errors.push("user.id missing or not a string");
+        if (!u.username || typeof u.username !== "string") errors.push("user.username missing or not a string");
+      }
+    }
+
+    if (Array.isArray(state.cases)) {
+      for (const c of state.cases) {
+        if (!c.id || typeof c.id !== "string") errors.push("case.id missing or not a string");
+        if (!c.caseNumber || typeof c.caseNumber !== "string") errors.push("case.caseNumber missing or not a string");
+      }
+    }
+
+    // allow cityLaws to be absent or an object
+    if (state.cityLaws !== undefined && typeof state.cityLaws !== "object") {
+      errors.push("cityLaws must be an object if present");
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+
   // Import state from a plain object (replaces current in-memory data)
   async importState(state: any): Promise<void> {
     // clear current maps
