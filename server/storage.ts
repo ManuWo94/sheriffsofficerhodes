@@ -127,7 +127,13 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...(insertUser as any), id };
+    const user: User = {
+      id,
+      username: insertUser.username,
+      password: insertUser.password,
+      rank: insertUser.rank as any,
+      mustChangePassword: insertUser.mustChangePassword ?? 0,
+    };
     this.users.set(id, user);
     return user;
   }
@@ -156,8 +162,15 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const now = new Date();
     const caseData: Case = {
-      ...(insertCase as any),
       id,
+      caseNumber: insertCase.caseNumber,
+      personName: insertCase.personName,
+      crime: insertCase.crime,
+      status: insertCase.status as any,
+      notes: insertCase.notes ?? null,
+      photo: insertCase.photo ?? null,
+      characteristics: insertCase.characteristics ?? null,
+      handler: insertCase.handler,
       createdAt: now,
       updatedAt: now,
     };
@@ -241,8 +254,12 @@ export class MemStorage implements IStorage {
   async createJailRecord(insertRecord: InsertJailRecord): Promise<JailRecord> {
     const id = randomUUID();
     const record: JailRecord = {
-      ...(insertRecord as any),
       id,
+      personName: insertRecord.personName,
+      crime: insertRecord.crime,
+      durationMinutes: insertRecord.durationMinutes,
+      startTime: insertRecord.startTime,
+      handler: insertRecord.handler,
       released: 0,
       releasedAt: null,
     };
@@ -270,7 +287,12 @@ export class MemStorage implements IStorage {
 
   async createFine(insertFine: InsertFine): Promise<Fine> {
     const id = randomUUID();
-    const fine: Fine = { ...(insertFine as any), id, remarks: insertFine.remarks ?? null };
+    const fine: Fine = {
+      id,
+      violation: insertFine.violation,
+      amount: insertFine.amount,
+      remarks: insertFine.remarks ?? null,
+    };
     this.fines.set(id, fine);
     return fine;
   }
@@ -285,7 +307,12 @@ export class MemStorage implements IStorage {
   }
 
   async saveCityLaws(insertLaws: InsertCityLaws): Promise<CityLaws> {
-    const laws: CityLaws = { ...(insertLaws as any), id: "singleton", updatedAt: new Date() };
+    const laws: CityLaws = {
+      id: "singleton",
+      content: insertLaws.content,
+      updatedAt: new Date(),
+      updatedBy: insertLaws.updatedBy,
+    };
     this.cityLaws = laws;
     return laws;
   }
@@ -304,7 +331,19 @@ export class MemStorage implements IStorage {
   async createWeapon(insertWeapon: InsertWeapon, createdBy: string): Promise<Weapon> {
     const id = randomUUID();
     const now = new Date();
-    const weapon: Weapon = { ...(insertWeapon as any), id, statusChangedAt: now, createdAt: now, createdBy, updatedAt: now, updatedBy: createdBy };
+    const weapon: Weapon = {
+      id,
+      serialNumber: insertWeapon.serialNumber,
+      weaponType: insertWeapon.weaponType,
+      owner: insertWeapon.owner,
+      category: insertWeapon.category,
+      status: insertWeapon.status as any,
+      statusChangedAt: now,
+      createdAt: now,
+      createdBy,
+      updatedAt: now,
+      updatedBy: createdBy,
+    };
     this.weapons.set(id, weapon);
     return weapon;
   }
@@ -338,7 +377,16 @@ export class MemStorage implements IStorage {
   async createTask(insertTask: InsertTask): Promise<Task> {
     const id = randomUUID();
     const now = new Date();
-    const task: Task = { ...(insertTask as any), id, createdAt: now, updatedAt: now };
+    const task: Task = {
+      id,
+      title: insertTask.title,
+      description: insertTask.description,
+      assignedTo: insertTask.assignedTo,
+      assignedBy: insertTask.assignedBy,
+      status: insertTask.status as any,
+      createdAt: now,
+      updatedAt: now,
+    };
     this.tasks.set(id, task);
     return task;
   }
@@ -371,7 +419,14 @@ export class MemStorage implements IStorage {
   async createGlobalNote(insertNote: InsertGlobalNote): Promise<GlobalNote> {
     const id = randomUUID();
     const now = new Date();
-    const note: GlobalNote = { ...(insertNote as any), id, createdAt: now, updatedAt: now, updatedBy: insertNote.author };
+    const note: GlobalNote = {
+      id,
+      content: insertNote.content,
+      author: insertNote.author,
+      createdAt: now,
+      updatedAt: now,
+      updatedBy: insertNote.author,
+    };
     this.globalNotes.set(id, note);
     return note;
   }
@@ -395,7 +450,13 @@ export class MemStorage implements IStorage {
   async createUserNote(insertNote: InsertUserNote): Promise<UserNote> {
     const id = randomUUID();
     const now = new Date();
-    const note: UserNote = { ...(insertNote as any), id, createdAt: now, updatedAt: now };
+    const note: UserNote = {
+      id,
+      userId: insertNote.userId,
+      content: insertNote.content,
+      createdAt: now,
+      updatedAt: now,
+    };
     this.userNotes.set(id, note);
     return note;
   }
@@ -431,7 +492,15 @@ export class MemStorage implements IStorage {
 
   async createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog> {
     const id = randomUUID();
-    const log: AuditLog = { ...(insertLog as any), id, entityId: insertLog.entityId ?? null, timestamp: new Date() };
+    const log: AuditLog = {
+      id,
+      action: insertLog.action,
+      entity: insertLog.entity,
+      entityId: insertLog.entityId ?? null,
+      details: insertLog.details,
+      username: insertLog.username,
+      timestamp: new Date(),
+    };
     this.auditLogs.set(id, log);
     return log;
   }
