@@ -1,0 +1,45 @@
+{
+  "users": [
+    {
+      "id": "3b4f1d25-7b02-41f9-9084-127ca3d16a2c",
+      "username": "sheriff",
+      "password": "admin123",
+      "rank": "Sheriff",
+      "mustChangePassword": 0
+    },
+    {
+      "id": "2b684f58-b401-44b4-a9f0-98dc96b4a1ad",
+      "username": "sheriff",
+      "password": "admin123",
+      "rank": "Sheriff",
+      "mustChangePassword": 0
+    }
+  ],
+  "cases": [],
+  "jailRecords": [],
+  "fines": [],
+  "weapons": [],
+  "tasks": [],
+  "globalNotes": [],
+  "userNotes": [],
+  "auditLogs": [
+    {
+      "id": "5eb431e7-b31d-406a-b76c-c4d4dc1afd27",
+      "action": "Login",
+      "entity": "user",
+      "entityId": "3b4f1d25-7b02-41f9-9084-127ca3d16a2c",
+      "details": "Benutzer sheriff hat sich angemeldet",
+      "username": "sheriff",
+      "timestamp": "2025-11-23T22:52:53.822Z"
+    },
+    {
+      "id": "f90bf69d-9086-4bb5-85fc-34b36a64e120",
+      "action": "Storage importiert",
+      "entity": "storage",
+      "entityId": null,
+      "details": "Storage importiert durch sheriff",
+      "username": "sheriff",
+      "timestamp": "2025-11-23T22:52:53.861Z"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "users": [
+    {
+      "id": "65288f1c-4989-43ff-914c-fe56a80e7177",
+      "username": "sheriff",
+      "password": "admin123",
+      "rank": "Sheriff",
+      "mustChangePassword": 0
+    },
+    {
+      "id": "4f786593-b304-4f69-8222-fe8c7c03a6e1",
+      "username": "sheriff",
+      "password": "admin123",
+      "rank": "Sheriff",
+      "mustChangePassword": 0
+    }
+  ],
+  "cases": [
+    {
+      "id": "d27389e9-4921-45a7-accb-3f72f35650e8",
+      "caseNumber": "PERSIST-001",
+      "personName": "Persist Test",
+      "crime": "Persist-Check",
+      "status": "offen",
+      "notes": "",
+      "photo": null,
+      "characteristics": "",
+      "handler": "sheriff",
+      "createdAt": "2025-11-23T18:50:16.633Z",
+      "updatedAt": "2025-11-23T18:50:16.633Z"
+    }
+  ],
+  "jailRecords": [],
+  "fines": [],
+  "weapons": [],
+  "tasks": [],
+  "globalNotes": [],
+  "userNotes": [],
+  "auditLogs": [
+    {
+      "id": "e9271ae7-6019-48af-8fa4-7b7778f19d32",
+      "action": "Login",
+      "entity": "user",
+      "entityId": "4f786593-b304-4f69-8222-fe8c7c03a6e1",
+      "details": "Benutzer sheriff hat sich angemeldet",
+      "username": "sheriff",
+      "timestamp": "2025-11-23T18:50:08.972Z"
+    },
+    {
+      "id": "9b4129a6-8c09-4adc-8940-01d271140e6c",
+      "action": "Login",
+      "entity": "user",
+      "entityId": "4f786593-b304-4f69-8222-fe8c7c03a6e1",
+      "details": "Benutzer sheriff hat sich angemeldet",
+      "username": "sheriff",
+      "timestamp": "2025-11-23T18:50:16.623Z"
+    },
+    {
+      "id": "c45559e0-41d3-4a1d-8b51-00078fbd440b",
+      "action": "Fallakte erstellt",
+      "entity": "case",
+      "entityId": "d27389e9-4921-45a7-accb-3f72f35650e8",
+      "details": "Fallakte PERSIST-001 für Persist Test wurde angelegt",
+      "username": "sheriff",
+      "timestamp": "2025-11-23T18:50:16.634Z"
+    },
+    {
+      "id": "2709c316-ad08-4ebc-b71b-194c6b42f7e8",
+      "action": "Login",
+      "entity": "user",
+      "entityId": "65288f1c-4989-43ff-914c-fe56a80e7177",
+      "details": "Benutzer sheriff hat sich angemeldet",
+      "username": "sheriff",
+      "timestamp": "2025-11-23T18:51:01.007Z"
+    }
+  ]
+}

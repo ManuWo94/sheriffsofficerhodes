@@ -263,6 +263,44 @@ export class MemStorage implements IStorage {
     return { valid: errors.length === 0, errors };
   }
 
+  // Simple stronger validation: unique IDs and basic referential integrity
+  async validateStateStrict(state: any): Promise<{ valid: boolean; errors: string[] }> {
+    const { valid, errors } = await this.validateState(state);
+    const errs = errors.slice();
+    if (!valid) return { valid: false, errors: errs };
+
+    // collect IDs
+    const ids = new Set<string>();
+    const addIds = (arr: any[]) => {
+      for (const it of arr) {
+        if (it && it.id) {
+          if (ids.has(it.id)) errs.push(`Duplicate id found: ${it.id}`);
+          ids.add(it.id);
+        }
+      }
+    };
+
+    addIds(state.users || []);
+    addIds(state.cases || []);
+    addIds(state.jailRecords || []);
+    addIds(state.fines || []);
+    addIds(state.weapons || []);
+    addIds(state.tasks || []);
+    addIds(state.globalNotes || []);
+    addIds(state.userNotes || []);
+    addIds(state.auditLogs || []);
+
+    // simple referential check: if a case.handler references a user id, ensure exists
+    const userIds = new Set((state.users || []).map((u: any) => u.id));
+    for (const c of (state.cases || [])) {
+      if (c.handler && !userIds.has(c.handler)) {
+        errs.push(`Case ${c.id} references unknown handler user id ${c.handler}`);
+      }
+    }
+
+    return { valid: errs.length === 0, errors: errs };
+  }
+
   // Import state from a plain object (replaces current in-memory data)
   async importState(state: any): Promise<void> {
     // clear current maps

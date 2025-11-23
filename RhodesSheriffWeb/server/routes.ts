@@ -656,8 +656,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   }
 
+  // Optional admin API key protection: if ADMIN_API_KEY is set, require header x-admin-key
+  function requireAdminKey(req: any, res: any, next: any) {
+    const key = process.env.ADMIN_API_KEY;
+    if (!key) return next();
+    const provided = req.headers['x-admin-key'];
+    if (!provided || provided !== key) return res.status(403).json({ message: 'Ungültiger Admin-Key' });
+    next();
+  }
+
   app.get("/api/admin/storage/export", requireAuth, async (req: any, res) => {
     try {
+      console.log('[admin] export handler hit, session=', req.session && req.session.username);
       const state = await storage.exportState();
       const payload = JSON.stringify(state, null, 2);
       res.setHeader("Content-Type", "application/json");
@@ -668,13 +678,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/storage/import", requireAuth, requireSheriff, async (req: any, res) => {
+  app.post("/api/admin/storage/import", requireAuth, requireSheriff, requireAdminKey, async (req: any, res) => {
     try {
       const body = req.body;
       if (!body) return res.status(400).json({ message: "Body erforderlich" });
 
       const dryRun = req.query?.dryRun === "1" || req.query?.dryRun === "true";
       const validation = await storage.validateState(body);
+      // if strict mode requested via query, run stricter validation
+      if (req.query?.strict === '1' || req.query?.strict === 'true') {
+        const strict = await storage.validateStateStrict(body);
+        // merge errors if any
+        validation.errors.push(...strict.errors);
+        validation.valid = strict.valid && validation.valid;
+      }
       if (dryRun) {
         return res.json({ dryRun: true, ...validation });
       }
@@ -691,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/storage/reset", requireAuth, requireSheriff, async (req: any, res) => {
+  app.post("/api/admin/storage/reset", requireAuth, requireSheriff, requireAdminKey, async (req: any, res) => {
     try {
       await storage.resetToSeed();
       await logAudit("Storage zurückgesetzt", "storage", null, `Storage auf Seed zurückgesetzt durch ${req.session.username}`, req.session.username);
@@ -701,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/storage/save", requireAuth, async (req: any, res) => {
+  app.post("/api/admin/storage/save", requireAuth, requireAdminKey, async (req: any, res) => {
     try {
       await storage.saveNow();
       await logAudit("Storage gespeichert", "storage", null, `Storage manuell gespeichert durch ${req.session.username}`, req.session.username);
@@ -723,6 +740,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  // Debug: list registered routes (path or handler name)
+  try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const stack = app._router && app._router.stack ? app._router.stack : [];
+    const routes = stack.map((layer: any) => {
+      if (layer.route && layer.route.path) return `${Object.keys(layer.route.methods).join(',').toUpperCase()} ${layer.route.path}`;
+      return layer.name || '<middleware>';
+    });
+    console.log('[routes] registered routes:');
+    for (const r of routes) console.log('[routes]', r);
+  } catch (e) {
+    // ignore
+  }
+
+  // Temporary debug endpoint to inspect routes at runtime
+  app.get('/__debug/routes', (_req: any, res: any) => {
+    try {
+      // @ts-ignore
+      const stack = app._router && app._router.stack ? app._router.stack : [];
+      const routes = stack.map((layer: any) => {
+        if (layer.route && layer.route.path) return { methods: Object.keys(layer.route.methods), path: layer.route.path };
+        return { name: layer.name || '<middleware>' };
+      });
+      res.json({ routes });
+    } catch (e) {
+      res.status(500).json({ error: String(e) });
+    }
+  });
 
   return httpServer;
 }
