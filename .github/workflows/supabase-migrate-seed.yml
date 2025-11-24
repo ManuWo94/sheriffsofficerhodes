@@ -1,0 +1,46 @@
+name: Supabase Migrate & Seed
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  supabase-migrate-seed:
+    name: Push migrations & seed to Supabase
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create pg extensions (pgcrypto)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/create-pg-extensions.ts
+
+      - name: Push Drizzle migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx drizzle-kit push
+
+      - name: Seed database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx scripts/seed-to-db.ts RhodesSheriffWeb/data/storage.seed.json
+
+      - name: (Optional) Run E2E admin check
+        if: ${{ github.event.inputs.run_e2e == 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx tsx RhodesSheriffWeb/scripts/e2e-admin-check.ts
