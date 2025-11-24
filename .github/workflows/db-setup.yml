@@ -24,7 +24,15 @@ jobs:
       - name: Create pg extensions (pgcrypto)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx tsx scripts/create-pg-extensions.ts
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npx tsx scripts/create-pg-extensions.ts || echo "WARNING: create-pg-extensions failed; you may need to run CREATE EXTENSION pgcrypto manually in Supabase SQL Editor"
+
+      - name: Confirm pgcrypto (informational)
+        if: always()
+        run: |
+          echo "If the previous step failed, run in Supabase SQL Editor: CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 
       - name: Push Drizzle migrations
         env:
