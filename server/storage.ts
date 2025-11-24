@@ -12,6 +12,8 @@ import {
   type PersonSummary,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
 
 export interface IStorage {
   // Users
@@ -110,6 +112,141 @@ export class MemStorage implements IStorage {
       mustChangePassword: 0,
     };
     this.users.set(defaultUser.id, defaultUser);
+
+    // Load persisted state if available
+    try {
+      const dataDir = path.join(process.cwd(), "data");
+      const storageFile = path.join(dataDir, "storage.json");
+      if (fs.existsSync(storageFile)) {
+        const raw = fs.readFileSync(storageFile, "utf8");
+        const parsed = JSON.parse(raw);
+
+        // Helper to revive dates for known fields
+        const reviveDates = (obj: any) => {
+          if (!obj || typeof obj !== "object") return obj;
+          for (const k of Object.keys(obj)) {
+            const v = obj[k];
+            if (typeof v === "string" && /\d{4}-\d{2}-\d{2}T/.test(v)) {
+              obj[k] = new Date(v);
+            }
+          }
+          return obj;
+        };
+
+        if (parsed.users) {
+          for (const u of parsed.users) {
+            this.users.set(u.id, reviveDates(u));
+          }
+        }
+        if (parsed.cases) {
+          for (const c of parsed.cases) {
+            this.cases.set(c.id, reviveDates(c));
+          }
+        }
+        if (parsed.jailRecords) {
+          for (const j of parsed.jailRecords) {
+            this.jailRecords.set(j.id, reviveDates(j));
+          }
+        }
+        if (parsed.fines) {
+          for (const f of parsed.fines) {
+            this.fines.set(f.id, reviveDates(f));
+          }
+        }
+        if (parsed.cityLaws) {
+          this.cityLaws = reviveDates(parsed.cityLaws);
+        }
+        if (parsed.weapons) {
+          for (const w of parsed.weapons) {
+            this.weapons.set(w.id, reviveDates(w));
+          }
+        }
+        if (parsed.tasks) {
+          for (const t of parsed.tasks) {
+            this.tasks.set(t.id, reviveDates(t));
+          }
+        }
+        if (parsed.globalNotes) {
+          for (const n of parsed.globalNotes) {
+            this.globalNotes.set(n.id, reviveDates(n));
+          }
+        }
+        if (parsed.userNotes) {
+          for (const n of parsed.userNotes) {
+            this.userNotes.set(n.id, reviveDates(n));
+          }
+        }
+        if (parsed.auditLogs) {
+          for (const l of parsed.auditLogs) {
+            this.auditLogs.set(l.id, reviveDates(l));
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore load errors, will use defaults
+    }
+  }
+
+  private saveState() {
+    try {
+      const obj: any = {
+        users: Array.from(this.users.values()),
+        cases: Array.from(this.cases.values()),
+        jailRecords: Array.from(this.jailRecords.values()),
+        fines: Array.from(this.fines.values()),
+        cityLaws: this.cityLaws,
+        weapons: Array.from(this.weapons.values()),
+        tasks: Array.from(this.tasks.values()),
+        globalNotes: Array.from(this.globalNotes.values()),
+        userNotes: Array.from(this.userNotes.values()),
+        auditLogs: Array.from(this.auditLogs.values()),
+      };
+      const file = path.join(process.cwd(), "data", "storage.json");
+      const dir = path.dirname(file);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      const tmpFile = `${file}.tmp`;
+      const data = JSON.stringify(obj, null, 2);
+      fs.writeFileSync(tmpFile, data, "utf8");
+      try {
+        // Ensure data is flushed to disk
+        const fd = fs.openSync(tmpFile, "r");
+        try {
+          if (typeof fs.fdatasyncSync === "function") {
+            // Prefer fdatasync when available
+            (fs as any).fdatasyncSync(fd);
+          } else {
+            fs.fsyncSync(fd);
+          }
+        } finally {
+          fs.closeSync(fd);
+        }
+
+        // Rename into place
+        fs.renameSync(tmpFile, file);
+
+        // Fsync the directory to ensure the rename is durable
+        try {
+          const dirFd = fs.openSync(path.dirname(file), "r");
+          try {
+            fs.fsyncSync(dirFd);
+          } finally {
+            fs.closeSync(dirFd);
+          }
+        } catch (e) {
+          // Ignore dir fsync errors
+        }
+      } catch (e) {
+        // If anything fails, fallback to direct write
+        try {
+          fs.writeFileSync(file, data, "utf8");
+          if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile);
+        } catch (e2) {
+          // Ignore fallback errors
+        }
+      }
+    } catch (e) {
+      // Ignore save errors
+    }
   }
 
   // Users
@@ -314,6 +451,7 @@ export class MemStorage implements IStorage {
       updatedBy: insertLaws.updatedBy,
     };
     this.cityLaws = laws;
+    this.saveState();
     return laws;
   }
 
