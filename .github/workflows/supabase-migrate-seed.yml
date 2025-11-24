@@ -37,15 +37,37 @@ jobs:
         run: |
           echo "If the previous step failed, run in Supabase SQL Editor: CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 
-      - name: Push Drizzle migrations
+      - name: Push Drizzle migrations (with retries)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx drizzle-kit push
+        run: |
+          attempt=0
+          until [ $attempt -ge 3 ]; do
+            npx drizzle-kit push && break
+            attempt=$((attempt+1))
+            echo "drizzle-kit push failed, retrying ($attempt/3)..."
+            sleep 5
+          done
+          if [ $attempt -ge 3 ]; then
+            echo "drizzle-kit push failed after 3 attempts"
+            exit 1
+          fi
 
-      - name: Seed database
+      - name: Seed database (with retries)
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx tsx scripts/seed-to-db.ts RhodesSheriffWeb/data/storage.seed.json
+        run: |
+          attempt=0
+          until [ $attempt -ge 3 ]; do
+            npx tsx scripts/seed-to-db.ts RhodesSheriffWeb/data/storage.seed.json && break
+            attempt=$((attempt+1))
+            echo "seed import failed, retrying ($attempt/3)..."
+            sleep 5
+          done
+          if [ $attempt -ge 3 ]; then
+            echo "seed import failed after 3 attempts"
+            exit 1
+          fi
 
       - name: (Optional) Run E2E admin check
         if: ${{ github.event.inputs.run_e2e == 'true' }}
